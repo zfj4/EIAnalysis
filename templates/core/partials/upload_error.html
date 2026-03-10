@@ -1,0 +1,17 @@
+<div class="space-y-4">
+
+  <!-- Error banner -->
+  <div class="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+    <svg class="h-5 w-5 text-red-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+    </svg>
+    <div>
+      <p class="font-medium text-red-800">Upload Failed</p>
+      <p class="text-sm text-red-700 mt-1">{{ error }}</p>
+    </div>
+  </div>
+
+  <!-- Try again -->
+  {% include "core/partials/file_navigator.html" %}
+
+</div>

@@ -1,0 +1,55 @@
+<div class="flex gap-6 items-start">
+
+  <!-- Left: analysis selection sidebar -->
+  {% include "core/partials/analysis_selection.html" %}
+
+  <!-- Right: analysis panel (data summary shown initially) -->
+  <div id="analysis-panel" class="flex-1 min-w-0 space-y-6">
+
+    <!-- Success banner -->
+    <div class="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+      <svg class="h-5 w-5 text-green-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+      </svg>
+      <p class="text-green-800 font-medium">Data Loaded — select an analysis from the sidebar</p>
+    </div>
+
+    <!-- Summary card -->
+    <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm space-y-4">
+      <h2 class="text-lg font-semibold text-gray-800">File Summary</h2>
+
+      <dl class="grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <dt class="text-gray-500">Filename</dt>
+          <dd class="font-medium text-gray-900 truncate">{{ filename }}</dd>
+        </div>
+        <div>
+          <dt class="text-gray-500">Rows</dt>
+          <dd class="font-medium text-gray-900">{{ row_count }}</dd>
+        </div>
+        {% if columns %}
+        <div class="col-span-2">
+          <dt class="text-gray-500 mb-1">Columns ({{ columns|length }})</dt>
+          <dd class="flex flex-wrap gap-2">
+            {% for col in columns %}
+            <span class="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs font-mono">{{ col }}</span>
+            {% endfor %}
+          </dd>
+        </div>
+        {% endif %}
+      </dl>
+    </div>
+
+    <!-- Load another file -->
+    <button
+      hx-get="{% url 'core:index' %}"
+      hx-target="#main-content"
+      hx-swap="innerHTML"
+      hx-select="#main-content > *"
+      class="text-sm text-blue-600 hover:underline"
+    >
+      &#8592; Load a different file
+    </button>
+
+  </div>
+</div>

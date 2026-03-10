@@ -1,0 +1,211 @@
+<div class="space-y-8">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <h2 class="text-xl font-semibold">Tables Analysis Results</h2>
+    <button
+      hx-get="{% url 'core:tables_form' %}"
+      hx-target="#analysis-panel"
+      hx-swap="innerHTML"
+      class="text-sm text-blue-600 hover:underline"
+    >
+      &#8592; Modify selections
+    </button>
+  </div>
+
+  <!-- One section per exposure variable -->
+  {% for t in tables %}
+  <section class="space-y-6">
+
+    <!-- Variable title -->
+    <h3 class="text-base font-semibold text-gray-800 border-b pb-2">{{ t.variable }}</h3>
+
+    <!-- Contingency Table -->
+    <div class="overflow-x-auto">
+      <table class="min-w-max text-sm border-collapse">
+        <thead>
+          <tr class="bg-gray-100">
+            <th class="border border-gray-300 px-4 py-2 text-left font-medium text-gray-600">
+              Outcome \ Exposure
+            </th>
+            {% for col_label in t.col_labels %}
+            <th class="border border-gray-300 px-4 py-2 text-center font-medium text-gray-600">
+              {{ col_label }}
+            </th>
+            {% endfor %}
+            <th class="border border-gray-300 px-4 py-2 text-center font-medium text-gray-600 bg-gray-200">
+              Total
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in t.rows %}
+          <tr class="{% cycle 'bg-white' 'bg-gray-50' %}">
+            <td class="border border-gray-300 px-4 py-2 font-medium text-gray-700">{{ row.label }}</td>
+            {% for cell in row.cells %}
+            <td class="border border-gray-300 px-4 py-2 text-center text-gray-900">{{ cell }}</td>
+            {% endfor %}
+            <td class="border border-gray-300 px-4 py-2 text-center font-semibold text-gray-700 bg-gray-50">
+              {{ row.total }}
+            </td>
+          </tr>
+          {% endfor %}
+          <!-- Column totals row -->
+          <tr class="bg-gray-200 font-semibold">
+            <td class="border border-gray-300 px-4 py-2 text-gray-700">Total</td>
+            {% for ct in t.col_totals %}
+            <td class="border border-gray-300 px-4 py-2 text-center text-gray-900">{{ ct }}</td>
+            {% endfor %}
+            <td class="border border-gray-300 px-4 py-2 text-center text-gray-900">{{ t.grand_total }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Statistics -->
+    {% if t.is_two_by_two %}
+
+    <!-- 2x2: full stats -->
+    <!-- Single Table Analysis — mirrors the Epi Info reference output -->
+    <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm overflow-x-auto">
+      <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Single Table Analysis</h4>
+      <table class="text-sm w-full">
+        <thead>
+          <tr class="border-b border-gray-200">
+            <th class="text-left py-1 pr-4 font-medium text-gray-600 w-64"></th>
+            <th class="text-right py-1 px-4 font-medium text-gray-600">Point<br>Estimate</th>
+            <th class="text-right py-1 px-4 font-medium text-gray-600">95% CI<br>Lower</th>
+            <th class="text-right py-1 px-2 font-medium text-gray-600">95% CI<br>Upper</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+
+          <!-- Odds-based section -->
+          <tr class="bg-gray-50">
+            <td colspan="4" class="py-1 pr-4 text-xs font-semibold uppercase tracking-wider text-gray-500">
+              Parameters: Odds-based
+            </td>
+          </tr>
+          <tr>
+            <td class="py-1 pr-4 text-gray-700">Odds Ratio (cross product)</td>
+            <td class="py-1 px-4 text-right font-mono">{{ t.stats.OR|floatformat:4 }}</td>
+            <td class="py-1 px-4 text-right font-mono">{{ t.stats.ORLL|floatformat:4 }}</td>
+            <td class="py-1 px-2 text-right font-mono">{{ t.stats.ORUL|floatformat:4 }} <span class="text-gray-400 text-xs">(T)</span></td>
+          </tr>
+          <tr>
+            <td class="py-1 pr-4 text-gray-700">Odds Ratio (MLE)</td>
+            <td class="py-1 px-4 text-right font-mono">{{ t.stats.MidPOR|floatformat:4 }}</td>
+            <td class="py-1 px-4 text-right font-mono">{{ t.stats.MidPORLL|floatformat:4 }}</td>
+            <td class="py-1 px-2 text-right font-mono">{{ t.stats.MidPORUL|floatformat:4 }} <span class="text-gray-400 text-xs">(M)</span></td>
+          </tr>
+          <tr>
+            <td class="py-1 pr-4 text-gray-400 text-xs italic">Fisher exact CI</td>
+            <td class="py-1 px-4 text-right font-mono text-gray-400">—</td>
+            <td class="py-1 px-4 text-right font-mono">{{ t.stats.FisherORLL|floatformat:4 }}</td>
+            <td class="py-1 px-2 text-right font-mono">{{ t.stats.FisherORUL|floatformat:4 }} <span class="text-gray-400 text-xs">(F)</span></td>
+          </tr>
+
+          <!-- Risk-based section -->
+          <tr class="bg-gray-50">
+            <td colspan="4" class="py-1 pr-4 text-xs font-semibold uppercase tracking-wider text-gray-500">
+              Parameters: Risk-based
+            </td>
+          </tr>
+          <tr>
+            <td class="py-1 pr-4 text-gray-700">Risk Ratio (RR)</td>
+            <td class="py-1 px-4 text-right font-mono">{{ t.stats.RiskRatio|floatformat:4 }}</td>
+            <td class="py-1 px-4 text-right font-mono">{{ t.stats.RiskRatioLL|floatformat:4 }}</td>
+            <td class="py-1 px-2 text-right font-mono">{{ t.stats.RiskRatioUL|floatformat:4 }} <span class="text-gray-400 text-xs">(T)</span></td>
+          </tr>
+          <tr>
+            <td class="py-1 pr-4 text-gray-700">Risk Difference (RD%)</td>
+            <td class="py-1 px-4 text-right font-mono">{{ t.stats.RiskDifference|floatformat:4 }}</td>
+            <td class="py-1 px-4 text-right font-mono">{{ t.stats.RiskDifferenceLL|floatformat:4 }}</td>
+            <td class="py-1 px-2 text-right font-mono">{{ t.stats.RiskDifferenceUL|floatformat:4 }} <span class="text-gray-400 text-xs">(T)</span></td>
+          </tr>
+
+          <!-- Legend -->
+          <tr>
+            <td colspan="4" class="pt-2 pb-1 text-center text-xs text-gray-400 italic">
+              T = Taylor series &nbsp;|&nbsp; M = Mid-P &nbsp;|&nbsp; F = Fisher Exact
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Chi-square & p-values table -->
+    <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm overflow-x-auto">
+      <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Chi-Square Tests &amp; P-Values</h4>
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-200">
+            <th class="text-left py-1 pr-6 font-medium text-gray-600">Test</th>
+            <th class="text-right py-1 pr-6 font-medium text-gray-600">Statistic</th>
+            <th class="text-right py-1 font-medium text-gray-600">P-Value</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr>
+            <td class="py-1 pr-6 text-gray-700">Uncorrected χ²</td>
+            <td class="py-1 pr-6 text-right font-mono">{{ t.stats.UncorrectedX2|floatformat:4 }}</td>
+            <td class="py-1 text-right font-mono">{{ t.stats.UncorrectedX2P|floatformat:4 }}</td>
+          </tr>
+          <tr>
+            <td class="py-1 pr-6 text-gray-700">Yates-corrected χ²</td>
+            <td class="py-1 pr-6 text-right font-mono">{{ t.stats.CorrectedX2|floatformat:4 }}</td>
+            <td class="py-1 text-right font-mono">{{ t.stats.CorrectedX2P|floatformat:4 }}</td>
+          </tr>
+          <tr>
+            <td class="py-1 pr-6 text-gray-700">Mantel-Haenszel χ²</td>
+            <td class="py-1 pr-6 text-right font-mono">{{ t.stats.MHX2|floatformat:4 }}</td>
+            <td class="py-1 text-right font-mono">{{ t.stats.MHX2P|floatformat:4 }}</td>
+          </tr>
+          <tr>
+            <td class="py-1 pr-6 text-gray-700">Fisher Exact (2-tail)</td>
+            <td class="py-1 pr-6 text-right font-mono">—</td>
+            <td class="py-1 text-right font-mono">{{ t.stats.FisherExact2Tail|floatformat:4 }}</td>
+          </tr>
+          <tr>
+            <td class="py-1 pr-6 text-gray-700">Fisher Exact (1-tail)</td>
+            <td class="py-1 pr-6 text-right font-mono">—</td>
+            <td class="py-1 text-right font-mono">{{ t.stats.FisherExact1Tail|floatformat:4 }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    {% else %}
+
+    <!-- MxN: chi-square only -->
+    <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm overflow-x-auto">
+      <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Chi-Square Test</h4>
+      <table class="text-sm">
+        <tbody class="divide-y divide-gray-100">
+          <tr>
+            <td class="py-1 pr-8 text-gray-700">χ²</td>
+            <td class="py-1 font-mono">{{ t.stats.ChiSq|floatformat:4 }}</td>
+          </tr>
+          <tr>
+            <td class="py-1 pr-8 text-gray-700">df</td>
+            <td class="py-1 font-mono">{{ t.stats.ChiSqDF }}</td>
+          </tr>
+          <tr>
+            <td class="py-1 pr-8 text-gray-700">P-Value</td>
+            <td class="py-1 font-mono">{{ t.stats.ChiSqP|floatformat:4 }}</td>
+          </tr>
+          <tr>
+            <td class="py-1 pr-8 text-gray-700">Fisher's Exact</td>
+            <td class="py-1 font-mono">{{ t.stats.FishersExact|floatformat:4 }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    {% endif %}
+
+  </section>
+  {% endfor %}
+
+</div>

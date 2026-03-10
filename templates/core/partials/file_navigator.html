@@ -1,0 +1,44 @@
+<div class="max-w-lg">
+  <h2 class="text-xl font-semibold mb-4">Load Data File</h2>
+
+  <form
+    hx-post="{% url 'core:upload_json' %}"
+    hx-target="#main-content"
+    hx-swap="innerHTML"
+    hx-encoding="multipart/form-data"
+    hx-indicator="#upload-spinner"
+    class="space-y-4"
+  >
+    {% csrf_token %}
+
+    <label class="block">
+      <span class="text-sm font-medium text-gray-700">Select a JSON file</span>
+      <input
+        type="file"
+        name="json_file"
+        accept=".json,application/json"
+        required
+        class="mt-1 block w-full text-sm text-gray-600
+               file:mr-4 file:py-2 file:px-4
+               file:rounded file:border-0
+               file:text-sm file:font-semibold
+               file:bg-blue-50 file:text-blue-700
+               hover:file:bg-blue-100 cursor-pointer"
+      >
+    </label>
+
+    <button
+      type="submit"
+      class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white
+             text-sm font-semibold rounded hover:bg-blue-700 transition-colors"
+    >
+      <span id="upload-spinner" class="htmx-indicator">
+        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+        </svg>
+      </span>
+      Load File
+    </button>
+  </form>
+</div>
