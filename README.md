@@ -106,7 +106,31 @@ You should see a series of `OK` lines as Django creates its tables.
 
 ---
 
-## 7 — Start the development server
+## 7 — (Optional) Run with Docker instead of steps 3–6
+
+If you have [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed, you can skip creating a virtual environment, installing dependencies, and setting up PostgreSQL manually. Docker handles all of it.
+
+From the project folder, run:
+
+```
+docker compose up --build
+```
+
+Docker will:
+1. Build a Python 3.13 image and install all dependencies
+2. Start a PostgreSQL 17 container
+3. Run database migrations automatically
+4. Start the app on port 9000
+
+Open your browser and go to `http://127.0.0.1:9000/`
+
+To stop, press `Ctrl+C`. Your database data is preserved in a Docker volume between runs.
+
+> **Note:** On first run, Docker must download the base images (~200 MB). Subsequent starts are fast.
+
+---
+
+## 8 — Start the development server
 
 ```
 python manage.py runserver9000
@@ -124,7 +148,7 @@ You should see the EIAnalysis home screen with a **Load Data File** button.
 
 ---
 
-## 8 — Load the Salmonellosis sample dataset
+## 9 — Load the Salmonellosis sample dataset
 
 1. On the home screen, click **Choose File**
 2. Navigate to the `sample_data` folder inside the project directory
@@ -135,7 +159,7 @@ The page will display a summary showing **309 rows** and all available column na
 
 ---
 
-## 9 — Run Tables Analysis
+## 10 — Run Tables Analysis
 
 1. In the left sidebar, click **Tables Analysis**
 2. In the **Outcome Variable** dropdown, select **`Ill`**
