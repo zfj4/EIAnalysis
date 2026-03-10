@@ -161,6 +161,16 @@ class UploadJsonViewTests(TestCase):
         response = self.client.post(reverse(self.URL), {'json_file': f})
         self.assertTemplateUsed(response, 'core/partials/upload_error.html')
 
+    def test_list_of_non_dicts_returns_400(self):
+        """A JSON array of non-objects (e.g. scalars) must be rejected."""
+        response = self._upload([1, 2, 3])
+        self.assertEqual(response.status_code, 400)
+
+    def test_nested_list_returns_400(self):
+        """A JSON array of arrays (nested) must be rejected."""
+        response = self._upload([[1, 2], [3, 4]])
+        self.assertEqual(response.status_code, 400)
+
 
 # ===========================================================================
 # TablesFormViewTests

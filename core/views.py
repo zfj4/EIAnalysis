@@ -49,6 +49,14 @@ def upload_json(request):
             status=400,
         )
 
+    if not all(isinstance(item, dict) for item in data):
+        return render(
+            request,
+            'core/partials/upload_error.html',
+            {'error': 'Every item in the JSON array must be an object (not a nested array or value).'},
+            status=400,
+        )
+
     request.session['data'] = data
     request.session['data_filename'] = uploaded_file.name
 

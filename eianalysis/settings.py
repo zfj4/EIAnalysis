@@ -124,3 +124,6 @@ STATIC_URL = 'static/'
 # Unique cookie names to avoid conflicts with other Django apps on 127.0.0.1
 CSRF_COOKIE_NAME = 'eianalysis_csrftoken'
 SESSION_COOKIE_NAME = 'eianalysis_sessionid'
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
