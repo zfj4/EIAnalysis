@@ -106,7 +106,7 @@ You should see a series of `OK` lines as Django creates its tables.
 
 ---
 
-## 7 — (Optional) Run with Docker instead of steps 3–6
+## 7 — (Optional) Run with Docker instead of steps 5–6
 
 If you have [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed, you can skip steps 3 through 8 entirely. Docker creates the virtual environment, installs all dependencies (including epiinfo and PostgreSQL), runs migrations, and starts the server — all automatically.
 
