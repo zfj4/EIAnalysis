@@ -16,6 +16,8 @@ Before you begin, install the following on your machine:
 
 During the PostgreSQL installation you will be asked to set a password for the default `postgres` superuser — keep note of it.
 
+> **Using Docker?** If you plan to use Docker (step 7), you can skip these prerequisites entirely — Docker provides its own Python and PostgreSQL environments.
+
 ---
 
 ## 1 — Download and extract the project
@@ -106,7 +108,7 @@ You should see a series of `OK` lines as Django creates its tables.
 
 ---
 
-## 7 — (Optional) Run with Docker instead of steps 5–6
+## 7 — (Optional) Run with Docker instead of steps 3–8
 
 If you have [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed, you can skip steps 3 through 8 entirely. Docker creates the virtual environment, installs all dependencies (including epiinfo and PostgreSQL), runs migrations, and starts the server — all automatically.
 
