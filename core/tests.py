@@ -207,6 +207,16 @@ class TablesFormViewTests(TestCase):
         response = self.client.get(reverse(self.URL))
         self.assertContains(response, 'type="checkbox"')
 
+    def test_columns_sorted_alphabetically_case_insensitive(self):
+        """Columns must appear in case-insensitive alphabetical order."""
+        session = self.client.session
+        session['data'] = [{'Zebra': 1, 'apple': 1, 'Mango': 1, 'banana': 1}]
+        session.save()
+        response = self.client.get(reverse(self.URL))
+        content = response.content.decode()
+        positions = [content.index(col) for col in ['apple', 'banana', 'Mango', 'Zebra']]
+        self.assertEqual(positions, sorted(positions))
+
     def test_form_posts_to_run_analysis_url(self):
         """The form action must point to the run_analysis endpoint."""
         self._set_session_data()

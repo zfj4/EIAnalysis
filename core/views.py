@@ -74,7 +74,7 @@ def tables_form(request):
             status=400,
         )
 
-    columns = list(data[0].keys()) if data else []
+    columns = sorted(data[0].keys(), key=str.casefold) if data else []
     return render(
         request,
         'core/partials/tables_form.html',
