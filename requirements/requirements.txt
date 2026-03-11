@@ -10,4 +10,5 @@ Requirements:
 * The list of statistical analyses shall initially contain just one analysis: Tables Analysis.
 * Upon selection of Tables Analysis, the user shall be prompted to select one Outcome Variable and one or more Exposure Variables.
 * Executing Tables Analysis shall run TablesAnalysis from the epiinfo package (https://github.com/Epi-Info/epiinfo) and present all results in well-organized tables.
+* Tables Analysis results shall include a Summary Table at the top, above the per-variable contingency tables, showing one row per 2×2 exposure variable with the following columns: Variable Name, Odds Ratio (OR), ORLL, ORUL, Risk Ratio, RR LL, and RR UL. The Summary Table shall be initially sorted alphabetically (case-insensitive) by Variable Name. The user shall be able to click any column header to sort the table by that column; clicking the same header again shall reverse the sort direction.
 * http://127.0.0.1:8000/ is taken so this application shall use a different localhost URL.
