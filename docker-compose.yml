@@ -5,6 +5,8 @@ services:
       POSTGRES_DB: eianalysis
       POSTGRES_USER: devuser
       POSTGRES_PASSWORD: devpassword
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -12,16 +14,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
-  web:
-    build: .
-    ports:
-      - "9000:9000"
-    environment:
-      DB_HOST: db
-    depends_on:
-      db:
-        condition: service_healthy
 
 volumes:
   postgres_data:

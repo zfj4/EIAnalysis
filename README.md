@@ -12,11 +12,9 @@ Before you begin, install the following on your machine:
 | Software | Version | Download |
 |---|---|---|
 | Python | 3.11 or later | https://www.python.org/downloads/ |
-| PostgreSQL | 14 or later | https://www.postgresql.org/download/ |
+| Docker Desktop | latest | https://www.docker.com/products/docker-desktop/ |
 
-During the PostgreSQL installation you will be asked to set a password for the default `postgres` superuser — keep note of it.
-
-> **Using Docker?** If you plan to use Docker (step 7), you can skip these prerequisites entirely — Docker provides its own Python and PostgreSQL environments.
+Docker is used to run the PostgreSQL database. Python runs the Django development server directly on your machine, so code changes take effect immediately without rebuilding anything.
 
 ---
 
@@ -42,7 +40,7 @@ cd ~/Projects/EIAnalysis
 
 ---
 
-## 3 — Create and activate a virtual environment (Skip to 8 if running with Docker)
+## 3 — Create and activate a virtual environment
 
 **Windows**
 ```
@@ -70,35 +68,23 @@ This installs Django, psycopg2-binary (PostgreSQL driver), and the epiinfo analy
 
 ---
 
-## 5 — Create the PostgreSQL database and user
+## 5 — Start the database
 
-Open a new terminal window and connect to PostgreSQL:
+Make sure Docker Desktop is running, then from the project folder:
 
-**Windows**
 ```
-psql -U postgres
-```
-
-**macOS** (if installed via Homebrew, the default superuser matches your system username)
-```
-psql postgres
+docker compose up -d
 ```
 
-Run the following SQL commands, then exit:
+Docker will start a PostgreSQL 17 container on port 5432. Your database data is preserved in a Docker volume between runs.
 
-```sql
-CREATE USER devuser WITH PASSWORD 'devpassword';
-CREATE DATABASE eianalysis OWNER devuser;
-\q
-```
+> **Note:** On first run, Docker must download the PostgreSQL image (~60 MB). Subsequent starts are fast.
 
-> **Note:** The database name, username, and password are already configured in `eianalysis/settings.py`. If you use different values here, update that file to match.
+To stop the database: `docker compose down`
 
 ---
 
 ## 6 — Run database migrations
-
-Back in your project terminal (with the virtual environment active):
 
 ```
 python manage.py migrate
@@ -124,33 +110,11 @@ http://127.0.0.1:9000/
 
 You should see the EIAnalysis home screen with a **Load Data File** button.
 
----
-
-## 8 — (Optional) Run with Docker instead of steps 3–7
-
-If you have [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed, you can skip steps 3 through 8 entirely. Docker creates the virtual environment, installs all dependencies (including epiinfo and PostgreSQL), runs migrations, and starts the server — all automatically.
-
-From the project folder, run:
-
-```
-docker compose up --build
-```
-
-Docker will:
-1. Build a Python 3.13 image and install all dependencies
-2. Start a PostgreSQL 17 container
-3. Run database migrations automatically
-4. Start the app on port 9000
-
-Open your browser and go to `http://127.0.0.1:9000/`
-
-To stop, press `Ctrl+C`. Your database data is preserved in a Docker volume between runs.
-
-> **Note:** On first run, Docker must download the base images (~200 MB). Subsequent starts are fast.
+Code changes take effect immediately — no Docker rebuild needed.
 
 ---
 
-## 9 — Load the Salmonellosis sample dataset
+## 8 — Load the Salmonellosis sample dataset
 
 1. On the home screen, click **Choose File**
 2. Navigate to the `sample_data` folder inside the project directory
@@ -161,7 +125,7 @@ The page will display a summary showing **309 rows** and all available column na
 
 ---
 
-## 10 — Run Tables Analysis
+## 9 — Run Tables Analysis
 
 1. In the left sidebar, click **Tables Analysis**
 2. In the **Outcome Variable** dropdown, select **`Ill`**
