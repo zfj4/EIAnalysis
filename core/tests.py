@@ -354,6 +354,101 @@ class RunAnalysisViewTests(TestCase):
 
 
 # ===========================================================================
+# SummaryTableTests
+# ===========================================================================
+
+class SummaryTableTests(TestCase):
+    """TDD tests for the summary table at the top of Tables Analysis results."""
+
+    URL = 'core:run_analysis'
+
+    def _set_session_data(self):
+        session = self.client.session
+        session['data'] = SAMPLE_DATA
+        session.save()
+
+    def _run(self, **kwargs):
+        return self.client.post(
+            reverse(self.URL),
+            {'outcome_variable': 'outcome', 'exposure_variables': ['exposure'], **kwargs},
+        )
+
+    @patch('core.views.TablesAnalysis')
+    def test_summary_section_is_present(self, MockTA):
+        """Results must include a summary table section."""
+        MockTA.return_value.Run.return_value = MOCK_TABLES_RESULT
+        self._set_session_data()
+        response = self._run()
+        self.assertContains(response, 'Summary')
+
+    @patch('core.views.TablesAnalysis')
+    def test_summary_has_odds_ratio_column(self, MockTA):
+        """Summary table must have an Odds Ratio column header."""
+        MockTA.return_value.Run.return_value = MOCK_TABLES_RESULT
+        self._set_session_data()
+        response = self._run()
+        self.assertContains(response, 'Odds Ratio')
+
+    @patch('core.views.TablesAnalysis')
+    def test_summary_has_orll_and_orul_columns(self, MockTA):
+        """Summary table must have OR lower and upper limit column headers."""
+        MockTA.return_value.Run.return_value = MOCK_TABLES_RESULT
+        self._set_session_data()
+        response = self._run()
+        self.assertContains(response, 'ORLL')
+        self.assertContains(response, 'ORUL')
+
+    @patch('core.views.TablesAnalysis')
+    def test_summary_has_risk_ratio_column(self, MockTA):
+        """Summary table must have a Risk Ratio column header."""
+        MockTA.return_value.Run.return_value = MOCK_TABLES_RESULT
+        self._set_session_data()
+        response = self._run()
+        self.assertContains(response, 'Risk Ratio')
+
+    @patch('core.views.TablesAnalysis')
+    def test_summary_has_rr_ll_and_ul_columns(self, MockTA):
+        """Summary table must have RR lower and upper limit column headers."""
+        MockTA.return_value.Run.return_value = MOCK_TABLES_RESULT
+        self._set_session_data()
+        response = self._run()
+        self.assertContains(response, 'RR LL')
+        self.assertContains(response, 'RR UL')
+
+    @patch('core.views.TablesAnalysis')
+    def test_summary_shows_variable_name(self, MockTA):
+        """Summary table must contain a row for each analyzed variable."""
+        MockTA.return_value.Run.return_value = MOCK_TABLES_RESULT
+        self._set_session_data()
+        response = self._run()
+        self.assertContains(response, 'outcome * exposure')
+
+    @patch('core.views.TablesAnalysis')
+    def test_summary_shows_or_value(self, MockTA):
+        """Summary table must display the Odds Ratio point estimate."""
+        MockTA.return_value.Run.return_value = MOCK_TABLES_RESULT
+        self._set_session_data()
+        response = self._run()
+        self.assertContains(response, '4.0000')
+
+    @patch('core.views.TablesAnalysis')
+    def test_summary_shows_rr_value(self, MockTA):
+        """Summary table must display the Risk Ratio point estimate."""
+        MockTA.return_value.Run.return_value = MOCK_TABLES_RESULT
+        self._set_session_data()
+        response = self._run()
+        self.assertContains(response, '2.0000')
+
+    @patch('core.views.TablesAnalysis')
+    def test_summary_headers_are_sortable(self, MockTA):
+        """Column headers must carry the sort-header class for JS sorting."""
+        MockTA.return_value.Run.return_value = MOCK_TABLES_RESULT
+        self._set_session_data()
+        response = self._run()
+        self.assertContains(response, 'sort-header')
+
+
+# ===========================================================================
 # SalmonellosisIntegrationTests
 # ===========================================================================
 

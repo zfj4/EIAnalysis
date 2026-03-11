@@ -4,7 +4,7 @@
   <form
     hx-post="{% url 'core:run_analysis' %}"
     hx-target="#analysis-panel"
-    hx-swap="innerHTML"
+    hx-swap="innerHTML show:#analysis-panel:top"
     hx-indicator="#run-spinner"
     class="space-y-6"
   >

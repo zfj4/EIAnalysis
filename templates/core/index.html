@@ -31,5 +31,44 @@
     </div>
   </main>
 
+  <script>
+  (function () {
+    function initSummarySort() {
+      const table = document.getElementById('summary-table');
+      if (!table) return;
+      const tbody = table.querySelector('tbody');
+      const headers = Array.from(table.querySelectorAll('.sort-header'));
+      let sortCol = 0, sortAsc = true;
+
+      function applySort(col) {
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        rows.sort((a, b) => {
+          const aVal = a.querySelectorAll('td')[col].dataset.value;
+          const bVal = b.querySelectorAll('td')[col].dataset.value;
+          const aNum = parseFloat(aVal), bNum = parseFloat(bVal);
+          const cmp = (!isNaN(aNum) && !isNaN(bNum))
+            ? aNum - bNum
+            : aVal.localeCompare(bVal, undefined, { sensitivity: 'base' });
+          return sortAsc ? cmp : -cmp;
+        });
+        rows.forEach(r => tbody.appendChild(r));
+        headers.forEach((th, i) => {
+          th.querySelector('.sort-icon').textContent =
+            i === col ? (sortAsc ? '↑' : '↓') : '↕';
+        });
+      }
+
+      headers.forEach(th => {
+        th.addEventListener('click', () => {
+          const col = parseInt(th.dataset.col);
+          if (sortCol === col) { sortAsc = !sortAsc; } else { sortCol = col; sortAsc = true; }
+          applySort(sortCol);
+        });
+      });
+    }
+
+    document.body.addEventListener('htmx:afterSwap', initSummarySort);
+  })();
+  </script>
 </body>
 </html>

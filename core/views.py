@@ -157,6 +157,23 @@ def run_analysis(request):
             'is_two_by_two': is_two_by_two,
         })
 
+    summary = sorted(
+        [
+            {
+                'variable': t['variable'],
+                'OR': t['stats'].get('OR'),
+                'ORLL': t['stats'].get('ORLL'),
+                'ORUL': t['stats'].get('ORUL'),
+                'RiskRatio': t['stats'].get('RiskRatio'),
+                'RiskRatioLL': t['stats'].get('RiskRatioLL'),
+                'RiskRatioUL': t['stats'].get('RiskRatioUL'),
+            }
+            for t in tables
+            if t['is_two_by_two']
+        ],
+        key=lambda x: x['variable'].casefold(),
+    )
+
     return render(
         request,
         'core/partials/tables_results.html',
@@ -164,5 +181,6 @@ def run_analysis(request):
             'outcome': outcome,
             'exposures': exposures,
             'tables': tables,
+            'summary': summary,
         },
     )

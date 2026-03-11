@@ -6,12 +6,45 @@
     <button
       hx-get="{% url 'core:tables_form' %}"
       hx-target="#analysis-panel"
-      hx-swap="innerHTML"
+      hx-swap="innerHTML show:#analysis-panel:top"
       class="text-sm text-blue-600 hover:underline"
     >
       &#8592; Modify selections
     </button>
   </div>
+
+  <!-- Summary Table -->
+  {% if summary %}
+  <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm overflow-x-auto">
+    <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Summary</h3>
+    <table id="summary-table" class="min-w-full text-sm border-collapse">
+      <thead>
+        <tr class="bg-gray-100 border-b border-gray-300">
+          <th data-col="0" class="sort-header text-left px-3 py-2 font-medium text-gray-600 cursor-pointer select-none whitespace-nowrap">Variable Name <span class="sort-icon">↕</span></th>
+          <th data-col="1" class="sort-header text-right px-3 py-2 font-medium text-gray-600 cursor-pointer select-none whitespace-nowrap">Odds Ratio <span class="sort-icon">↑</span></th>
+          <th data-col="2" class="sort-header text-right px-3 py-2 font-medium text-gray-600 cursor-pointer select-none whitespace-nowrap">ORLL <span class="sort-icon">↕</span></th>
+          <th data-col="3" class="sort-header text-right px-3 py-2 font-medium text-gray-600 cursor-pointer select-none whitespace-nowrap">ORUL <span class="sort-icon">↕</span></th>
+          <th data-col="4" class="sort-header text-right px-3 py-2 font-medium text-gray-600 cursor-pointer select-none whitespace-nowrap">Risk Ratio <span class="sort-icon">↕</span></th>
+          <th data-col="5" class="sort-header text-right px-3 py-2 font-medium text-gray-600 cursor-pointer select-none whitespace-nowrap">RR LL <span class="sort-icon">↕</span></th>
+          <th data-col="6" class="sort-header text-right px-3 py-2 font-medium text-gray-600 cursor-pointer select-none whitespace-nowrap">RR UL <span class="sort-icon">↕</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in summary %}
+        <tr class="border-b border-gray-100 hover:bg-gray-50">
+          <td class="px-3 py-2 text-gray-800" data-value="{{ row.variable }}">{{ row.variable }}</td>
+          <td class="px-3 py-2 text-right font-mono" data-value="{{ row.OR }}">{{ row.OR|floatformat:4 }}</td>
+          <td class="px-3 py-2 text-right font-mono" data-value="{{ row.ORLL }}">{{ row.ORLL|floatformat:4 }}</td>
+          <td class="px-3 py-2 text-right font-mono" data-value="{{ row.ORUL }}">{{ row.ORUL|floatformat:4 }}</td>
+          <td class="px-3 py-2 text-right font-mono" data-value="{{ row.RiskRatio }}">{{ row.RiskRatio|floatformat:4 }}</td>
+          <td class="px-3 py-2 text-right font-mono" data-value="{{ row.RiskRatioLL }}">{{ row.RiskRatioLL|floatformat:4 }}</td>
+          <td class="px-3 py-2 text-right font-mono" data-value="{{ row.RiskRatioUL }}">{{ row.RiskRatioUL|floatformat:4 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
 
   <!-- One section per exposure variable -->
   {% for t in tables %}
