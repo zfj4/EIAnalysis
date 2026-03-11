@@ -1044,3 +1044,368 @@ class LogisticIntegrationTests(TestCase):
         response = self._run(interactions=['ChefSalad', 'EggSaladSandwich'])
         self.assertContains(response, '13.8937')   # ChefSalad OR (with interaction)
         self.assertContains(response, '389.8618')  # -2LL
+
+
+# ---------------------------------------------------------------------------
+# Shared mock for LogBinomialRegression.doRegression()
+# ---------------------------------------------------------------------------
+MOCK_LOGBINOMIAL_RESULT = SimpleNamespace(
+    Variables=['exposure', 'CONSTANT'],
+    Beta=[0.3359, -0.8579],
+    SE=[0.1156, 0.1275],
+    RR=[1.3992],
+    RRLCL=[1.1155],
+    RRUCL=[1.7550],
+    Z=[2.9054, -6.7264],
+    PZ=[0.0037, 0.0000],
+    Iterations=7,
+    LogLikelihood=-197.8080,
+    CasesIncluded=6,
+    InteractionRR=[],
+)
+
+
+# ===========================================================================
+# LogBinomialFormViewTests
+# ===========================================================================
+
+class LogBinomialFormViewTests(TestCase):
+    """TDD tests for the log-binomial regression variable-selection form view."""
+
+    URL = 'core:logbinomial_form'
+
+    def _set_session_data(self):
+        session = self.client.session
+        session['data'] = SAMPLE_DATA
+        session['data_filename'] = 'sample.json'
+        session.save()
+
+    def test_requires_session_data(self):
+        """GET without loaded data must return 400."""
+        response = self.client.get(reverse(self.URL))
+        self.assertEqual(response.status_code, 400)
+
+    def test_returns_200_with_session_data(self):
+        self._set_session_data()
+        response = self.client.get(reverse(self.URL))
+        self.assertEqual(response.status_code, 200)
+
+    def test_uses_correct_template(self):
+        self._set_session_data()
+        response = self.client.get(reverse(self.URL))
+        self.assertTemplateUsed(response, 'core/partials/logbinomial_form.html')
+
+    def test_all_columns_in_outcome_dropdown(self):
+        self._set_session_data()
+        response = self.client.get(reverse(self.URL))
+        for col in ['outcome', 'exposure', 'age']:
+            self.assertContains(response, col)
+
+    def test_exposure_checkboxes_present(self):
+        self._set_session_data()
+        response = self.client.get(reverse(self.URL))
+        self.assertContains(response, 'type="checkbox"')
+
+    def test_no_match_variable_dropdown(self):
+        """Log-binomial form must NOT include a match variable option."""
+        self._set_session_data()
+        response = self.client.get(reverse(self.URL))
+        self.assertNotContains(response, 'match_variable')
+
+    def test_interaction_variables_checkboxes_present(self):
+        self._set_session_data()
+        response = self.client.get(reverse(self.URL))
+        self.assertContains(response, 'interaction_variables')
+
+    def test_columns_sorted_alphabetically_case_insensitive(self):
+        session = self.client.session
+        session['data'] = [{'Zebra': 1, 'apple': 1, 'Mango': 1, 'banana': 1}]
+        session.save()
+        response = self.client.get(reverse(self.URL))
+        content = response.content.decode()
+        positions = [content.index(col) for col in ['apple', 'banana', 'Mango', 'Zebra']]
+        self.assertEqual(positions, sorted(positions))
+
+    def test_form_posts_to_run_logbinomial_url(self):
+        self._set_session_data()
+        response = self.client.get(reverse(self.URL))
+        self.assertContains(response, reverse('core:run_logbinomial'))
+
+
+# ===========================================================================
+# RunLogBinomialViewTests
+# ===========================================================================
+
+class RunLogBinomialViewTests(TestCase):
+    """TDD tests for the run_logbinomial view (calls epiinfo.LogBinomialRegression)."""
+
+    URL = 'core:run_logbinomial'
+
+    def _set_session_data(self):
+        session = self.client.session
+        session['data'] = SAMPLE_DATA
+        session.save()
+
+    def _run(self, outcome='outcome', exposures=None, interactions=None):
+        if exposures is None:
+            exposures = ['exposure']
+        data = {
+            'outcome_variable': outcome,
+            'exposure_variables': exposures,
+        }
+        if interactions:
+            data['interaction_variables'] = interactions
+        return self.client.post(reverse(self.URL), data)
+
+    def test_get_returns_405(self):
+        response = self.client.get(reverse(self.URL))
+        self.assertEqual(response.status_code, 405)
+
+    def test_requires_session_data(self):
+        response = self._run()
+        self.assertEqual(response.status_code, 400)
+
+    def test_missing_outcome_returns_400(self):
+        self._set_session_data()
+        response = self.client.post(
+            reverse(self.URL),
+            {'exposure_variables': ['exposure']},
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_missing_exposures_returns_400(self):
+        self._set_session_data()
+        response = self.client.post(
+            reverse(self.URL),
+            {'outcome_variable': 'outcome'},
+        )
+        self.assertEqual(response.status_code, 400)
+
+    @patch('core.views.LogBinomialRegression')
+    def test_valid_run_returns_200(self, MockLB):
+        MockLB.return_value.doRegression.return_value = MOCK_LOGBINOMIAL_RESULT
+        self._set_session_data()
+        response = self._run()
+        self.assertEqual(response.status_code, 200)
+
+    @patch('core.views.LogBinomialRegression')
+    def test_valid_run_uses_results_template(self, MockLB):
+        MockLB.return_value.doRegression.return_value = MOCK_LOGBINOMIAL_RESULT
+        self._set_session_data()
+        response = self._run()
+        self.assertTemplateUsed(response, 'core/partials/logbinomial_results.html')
+
+    @patch('core.views.LogBinomialRegression')
+    def test_results_contain_risk_ratio(self, MockLB):
+        """Results must display the Risk Ratio value for a term."""
+        MockLB.return_value.doRegression.return_value = MOCK_LOGBINOMIAL_RESULT
+        self._set_session_data()
+        response = self._run()
+        self.assertContains(response, '1.3992')
+
+    @patch('core.views.LogBinomialRegression')
+    def test_results_contain_term_name_and_constant(self, MockLB):
+        MockLB.return_value.doRegression.return_value = MOCK_LOGBINOMIAL_RESULT
+        self._set_session_data()
+        response = self._run()
+        self.assertContains(response, 'exposure')
+        self.assertContains(response, 'CONSTANT')
+
+    @patch('core.views.LogBinomialRegression')
+    def test_results_contain_log_likelihood(self, MockLB):
+        """Results must display the final log-likelihood (not -2LL)."""
+        MockLB.return_value.doRegression.return_value = MOCK_LOGBINOMIAL_RESULT
+        self._set_session_data()
+        response = self._run()
+        self.assertContains(response, '197.8080')
+
+    @patch('core.views.LogBinomialRegression')
+    def test_calls_doregression_with_outcome_and_exposures(self, MockLB):
+        MockLB.return_value.doRegression.return_value = MOCK_LOGBINOMIAL_RESULT
+        self._set_session_data()
+        self._run(outcome='outcome', exposures=['exposure'])
+        call_args = MockLB.return_value.doRegression.call_args
+        ivl = call_args[0][0]
+        self.assertEqual(ivl.get('outcome'), 'dependvar')
+        self.assertIn('exposure', ivl.get('exposureVariables', []))
+
+    @patch('core.views.LogBinomialRegression')
+    def test_interaction_terms_added_to_exposure_variables(self, MockLB):
+        MockLB.return_value.doRegression.return_value = MOCK_LOGBINOMIAL_RESULT
+        self._set_session_data()
+        self._run(
+            outcome='outcome',
+            exposures=['exposure', 'age'],
+            interactions=['exposure', 'age'],
+        )
+        call_args = MockLB.return_value.doRegression.call_args
+        ivl = call_args[0][0]
+        self.assertIn('exposure*age', ivl.get('exposureVariables', []))
+
+
+# ===========================================================================
+# LogBinomialIntegrationTests
+# ===========================================================================
+
+class LogBinomialIntegrationTests(TestCase):
+    """
+    Integration test: loads Salmonellosis.json, runs LogBinomialRegression
+    against the live epiinfo library, and asserts known RR values.
+
+    Reference values from sample_data/Salmonellosis.html:
+      Ill = ChefSalad + EggSaladSandwich (no interaction):
+        ChefSalad        RR=1.3992, CI=[1.1155, 1.7550], Beta=0.3359, SE=0.1156, Z=2.9054, P=0.0037
+        EggSaladSandwich RR=1.3325, CI=[1.1251, 1.5780], Beta=0.2870, SE=0.0863, Z=3.3261, P=0.0009
+        CONSTANT         Beta=-0.8579, SE=0.1275, Z=-6.7264, P=0.0000
+        Iterations=7, LogLikelihood=-197.8080, Cases=309
+
+      Ill = ChefSalad + EggSaladSandwich + ChefSalad*EggSaladSandwich (interaction):
+        ChefSalad        RR=6.0736, CI=[0.9422, 39.1510]
+        EggSaladSandwich RR=6.0000, CI=[0.9255, 38.8983]
+        Iterations=8, LogLikelihood=-194.9309, Cases=309
+        InteractionRR:
+          ChefSalad 1 vs 0 at EggSaladSandwich=0: 6.073605 [0.942214, 39.151041]
+          ChefSalad 1 vs 0 at EggSaladSandwich=1: 1.287879 [1.021483, 1.623750]
+    """
+
+    OUTCOME = 'Ill'
+    EXPOSURES = ['ChefSalad', 'EggSaladSandwich']
+    PLACES = 4
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        with open(SAMPLE_DATA_PATH) as f:
+            cls.data = json.load(f)
+
+    def _set_session(self):
+        session = self.client.session
+        session['data'] = self.data
+        session.save()
+
+    def _run(self, interactions=None):
+        self._set_session()
+        post_data = {
+            'outcome_variable': self.OUTCOME,
+            'exposure_variables': self.EXPOSURES,
+        }
+        if interactions:
+            post_data['interaction_variables'] = interactions
+        return self.client.post(reverse('core:run_logbinomial'), post_data)
+
+    def _direct(self, exposures=None):
+        from epiinfo.LogBinomialRegression import LogBinomialRegression as EpiLB
+        lb = EpiLB()
+        return lb.doRegression(
+            {'Ill': 'dependvar', 'exposureVariables': exposures or self.EXPOSURES},
+            self.data,
+        )
+
+    # --- Analysis 1: no interaction ---
+
+    def test_run_returns_200(self):
+        self.assertEqual(self._run().status_code, 200)
+
+    def test_chefsalad_rr(self):
+        """ChefSalad RR must equal 1.3992 (to 4 dp)."""
+        r = self._direct()
+        idx = r.Variables.index('ChefSalad')
+        self.assertAlmostEqual(r.RR[idx], 1.3992, places=self.PLACES)
+
+    def test_eggsaladsandwich_rr(self):
+        """EggSaladSandwich RR must equal 1.3325 (to 4 dp)."""
+        r = self._direct()
+        idx = r.Variables.index('EggSaladSandwich')
+        self.assertAlmostEqual(r.RR[idx], 1.3325, places=self.PLACES)
+
+    def test_chefsalad_rr_confidence_limits(self):
+        """ChefSalad 95% CI must be [1.1155, 1.7550]."""
+        r = self._direct()
+        idx = r.Variables.index('ChefSalad')
+        self.assertAlmostEqual(r.RRLCL[idx], 1.1155, places=self.PLACES)
+        self.assertAlmostEqual(r.RRUCL[idx], 1.7550, places=self.PLACES)
+
+    def test_eggsaladsandwich_rr_confidence_limits(self):
+        """EggSaladSandwich 95% CI must be [1.1251, 1.5780]."""
+        r = self._direct()
+        idx = r.Variables.index('EggSaladSandwich')
+        self.assertAlmostEqual(r.RRLCL[idx], 1.1251, places=self.PLACES)
+        self.assertAlmostEqual(r.RRUCL[idx], 1.5780, places=self.PLACES)
+
+    def test_chefsalad_beta_and_se(self):
+        """ChefSalad Beta=0.3359, SE=0.1156."""
+        r = self._direct()
+        idx = r.Variables.index('ChefSalad')
+        self.assertAlmostEqual(r.Beta[idx], 0.3359, places=self.PLACES)
+        self.assertAlmostEqual(r.SE[idx], 0.1156, places=self.PLACES)
+
+    def test_chefsalad_z_and_p(self):
+        """ChefSalad Z=2.9054, P=0.0037."""
+        r = self._direct()
+        idx = r.Variables.index('ChefSalad')
+        self.assertAlmostEqual(r.Z[idx], 2.9054, places=self.PLACES)
+        self.assertAlmostEqual(r.PZ[idx], 0.0037, places=self.PLACES)
+
+    def test_model_fit_stats(self):
+        """Iterations=7, LogLikelihood=-197.8080, Cases=309."""
+        r = self._direct()
+        self.assertEqual(r.Iterations, 7)
+        self.assertAlmostEqual(r.LogLikelihood, -197.8080, places=self.PLACES)
+        self.assertEqual(r.CasesIncluded, 309)
+
+    def test_results_page_shows_rr_values(self):
+        response = self._run()
+        self.assertContains(response, '1.3992')
+        self.assertContains(response, '1.3325')
+
+    def test_results_page_shows_ci_and_beta(self):
+        response = self._run()
+        self.assertContains(response, '1.1155')   # ChefSalad RRLCL
+        self.assertContains(response, '1.7550')   # ChefSalad RRUCL
+        self.assertContains(response, '0.3359')   # ChefSalad Beta
+        self.assertContains(response, '0.1156')   # ChefSalad SE
+        self.assertContains(response, '2.9054')   # ChefSalad Z
+
+    def test_results_page_shows_log_likelihood(self):
+        response = self._run()
+        self.assertContains(response, '197.8080')
+        self.assertContains(response, '309')
+
+    # --- Analysis 2: with interaction ---
+
+    def test_interaction_run_returns_200(self):
+        self.assertEqual(self._run(interactions=['ChefSalad', 'EggSaladSandwich']).status_code, 200)
+
+    def test_interaction_chefsalad_rr(self):
+        """With interaction, ChefSalad RR=6.0736."""
+        r = self._direct(self.EXPOSURES + ['ChefSalad*EggSaladSandwich'])
+        idx = r.Variables.index('ChefSalad')
+        self.assertAlmostEqual(r.RR[idx], 6.0736, places=self.PLACES)
+
+    def test_interaction_log_likelihood(self):
+        """With interaction, LogLikelihood=-194.9309."""
+        r = self._direct(self.EXPOSURES + ['ChefSalad*EggSaladSandwich'])
+        self.assertAlmostEqual(r.LogLikelihood, -194.9309, places=self.PLACES)
+
+    def test_interaction_rr_rows(self):
+        """InteractionRR must contain two rows with reference values."""
+        r = self._direct(self.EXPOSURES + ['ChefSalad*EggSaladSandwich'])
+        self.assertEqual(len(r.InteractionRR), 2)
+        # Row 0: ChefSalad 1 vs 0 at EggSaladSandwich=0
+        self.assertAlmostEqual(r.InteractionRR[0][2], 6.073605, places=4)
+        self.assertAlmostEqual(r.InteractionRR[0][3], 0.942214, places=4)
+        self.assertAlmostEqual(r.InteractionRR[0][4], 39.151041, places=2)
+        # Row 1: ChefSalad 1 vs 0 at EggSaladSandwich=1
+        self.assertAlmostEqual(r.InteractionRR[1][2], 1.287879, places=4)
+        self.assertAlmostEqual(r.InteractionRR[1][3], 1.021483, places=4)
+        self.assertAlmostEqual(r.InteractionRR[1][4], 1.623750, places=4)
+
+    def test_interaction_results_page_shows_reference_values(self):
+        response = self._run(interactions=['ChefSalad', 'EggSaladSandwich'])
+        self.assertContains(response, '6.0736')    # ChefSalad RR (with interaction)
+        self.assertContains(response, '194.9309')  # LogLikelihood
+
+    def test_interaction_results_page_shows_interaction_table(self):
+        response = self._run(interactions=['ChefSalad', 'EggSaladSandwich'])
+        self.assertContains(response, 'Risk Ratio')
+        self.assertContains(response, 'Interaction')

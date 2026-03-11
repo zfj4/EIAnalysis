@@ -21,5 +21,15 @@
     >
       Logistic Regression
     </button>
+    <button
+      hx-get="{% url 'core:logbinomial_form' %}"
+      hx-target="#analysis-panel"
+      hx-swap="innerHTML"
+      class="w-full text-left px-3 py-2 rounded-md text-sm font-medium
+             text-gray-700 hover:bg-blue-50 hover:text-blue-700
+             transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+      Log-Binomial Regression
+    </button>
   </nav>
 </aside>

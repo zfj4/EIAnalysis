@@ -20,4 +20,10 @@ Initial version (1.0) of the application shall meet the following requirements:
 * Upon selection of Logistic Regression Analysis, the user shall be prompted to select one Outcome Variable and one or more Exposure Variables.
 * User shall have the option to select a Match Variable for matched case-control analysis.
 * User shall have the option to select two or more of the Exposure Variables as Interaction Variables.
-* Executing Logistic Regression Analysis shall run LogisticRegressionAnalysis from the epiinfo package (https://github.com/Epi-Info/epiinfo) and present results in formats similar to those in the two logistic regression analyses in sample_data\Salmonellosis.html.
+* Executing Logistic Regression Analysis shall run LogisticRegression from the epiinfo package (https://github.com/Epi-Info/epiinfo) and present results in formats similar to those in the two logistic regression analyses in sample_data\Salmonellosis.html.
+
+1.1.1 Requirements:
+* Add Log-Binomial Regression Analysis to the list of available analyses.
+* Its user interface shall be nearly identical to that of Logistic Regression Analysis, except that it shall not have a Match Variable option.
+* Executing Log-Binomial Regression Analysis shall run LogBinomialRegression from the epiinfo package (https://github.com/Epi-Info/epiinfo) and present results in formats similar to those in the two log-binomial regression analyses in sample_data\Salmonellosis.html.
+* Include comparing all calculations to those in the two log-binomial regression analyses in sample_data\Salmonellosis.html as part of testing and validation.

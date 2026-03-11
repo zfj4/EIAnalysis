@@ -3,6 +3,7 @@ from itertools import combinations
 
 from django.http import HttpResponseNotAllowed
 from django.shortcuts import render
+from epiinfo.LogBinomialRegression import LogBinomialRegression
 from epiinfo.LogisticRegression import LogisticRegression
 from epiinfo.TablesAnalysis import TablesAnalysis
 
@@ -300,6 +301,108 @@ def run_logistic(request):
             'lr': results.LikelihoodRatio,
             'lr_df': results.LikelihoodRatioDF,
             'lr_p': results.LikelihoodRatioP,
+            'interaction_groups': interaction_groups,
+        },
+    )
+
+
+def logbinomial_form(request):
+    data = request.session.get('data')
+    if not data:
+        return render(
+            request,
+            'core/partials/upload_error.html',
+            {'error': 'No data loaded. Please upload a JSON file first.'},
+            status=400,
+        )
+
+    columns = sorted(data[0].keys(), key=str.casefold) if data else []
+    return render(request, 'core/partials/logbinomial_form.html', {'columns': columns})
+
+
+def run_logbinomial(request):
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    data = request.session.get('data')
+    if not data:
+        return render(
+            request,
+            'core/partials/upload_error.html',
+            {'error': 'No data loaded. Please upload a JSON file first.'},
+            status=400,
+        )
+
+    outcome = request.POST.get('outcome_variable', '').strip()
+    exposures = request.POST.getlist('exposure_variables')
+    interaction_variables = request.POST.getlist('interaction_variables')
+
+    if not outcome:
+        return render(
+            request,
+            'core/partials/upload_error.html',
+            {'error': 'Please select an Outcome Variable.'},
+            status=400,
+        )
+    if not exposures:
+        return render(
+            request,
+            'core/partials/upload_error.html',
+            {'error': 'Please select at least one Exposure Variable.'},
+            status=400,
+        )
+
+    interaction_terms = [
+        f'{a}*{b}' for a, b in combinations(interaction_variables, 2)
+    ] if len(interaction_variables) >= 2 else []
+
+    input_variable_list = {
+        outcome: 'dependvar',
+        'exposureVariables': exposures + interaction_terms,
+    }
+
+    lb = LogBinomialRegression()
+    results = lb.doRegression(input_variable_list, data)
+
+    n_non_const = len(results.RR)
+    terms = []
+    for i, var in enumerate(results.Variables):
+        is_constant = (var == 'CONSTANT')
+        terms.append({
+            'name': var,
+            'is_constant': is_constant,
+            'beta': results.Beta[i],
+            'se': results.SE[i],
+            'z': results.Z[i],
+            'p': results.PZ[i],
+            'rr': results.RR[i] if i < n_non_const else None,
+            'rr_lcl': results.RRLCL[i] if i < n_non_const else None,
+            'rr_ucl': results.RRUCL[i] if i < n_non_const else None,
+        })
+
+    interaction_groups = {}
+    for irr in results.InteractionRR:
+        key = irr[0]
+        if key not in interaction_groups:
+            interaction_groups[key] = []
+        interaction_groups[key].append({
+            'label': irr[1],
+            'rr': irr[2],
+            'lcl': irr[3],
+            'ucl': irr[4],
+        })
+
+    return render(
+        request,
+        'core/partials/logbinomial_results.html',
+        {
+            'outcome': outcome,
+            'exposures': exposures,
+            'interaction_variables': interaction_variables,
+            'terms': terms,
+            'iterations': results.Iterations,
+            'log_likelihood': results.LogLikelihood,
+            'cases_included': results.CasesIncluded,
             'interaction_groups': interaction_groups,
         },
     )
