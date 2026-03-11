@@ -42,7 +42,7 @@ cd ~/Projects/EIAnalysis
 
 ---
 
-## 3 — Create and activate a virtual environment
+## 3 — Create and activate a virtual environment (Skip to 8 if running with Docker)
 
 **Windows**
 ```
@@ -108,7 +108,25 @@ You should see a series of `OK` lines as Django creates its tables.
 
 ---
 
-## 7 — (Optional) Run with Docker instead of steps 3–8
+## 7 — Start the development server
+
+```
+python manage.py runserver9000
+```
+
+The server starts on port 9000 because port 8000 is reserved for another application.
+
+Open your browser and go to:
+
+```
+http://127.0.0.1:9000/
+```
+
+You should see the EIAnalysis home screen with a **Load Data File** button.
+
+---
+
+## 8 — (Optional) Run with Docker instead of steps 3–7
 
 If you have [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed, you can skip steps 3 through 8 entirely. Docker creates the virtual environment, installs all dependencies (including epiinfo and PostgreSQL), runs migrations, and starts the server — all automatically.
 
@@ -129,24 +147,6 @@ Open your browser and go to `http://127.0.0.1:9000/`
 To stop, press `Ctrl+C`. Your database data is preserved in a Docker volume between runs.
 
 > **Note:** On first run, Docker must download the base images (~200 MB). Subsequent starts are fast.
-
----
-
-## 8 — Start the development server
-
-```
-python manage.py runserver9000
-```
-
-The server starts on port 9000 because port 8000 is reserved for another application.
-
-Open your browser and go to:
-
-```
-http://127.0.0.1:9000/
-```
-
-You should see the EIAnalysis home screen with a **Load Data File** button.
 
 ---
 
