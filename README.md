@@ -154,6 +154,40 @@ Expected values from the reference output:
 
 ---
 
+## 10 — Run Logistic Regression
+
+1. In the left sidebar, click **Logistic Regression**
+2. In the **Outcome Variable** dropdown, select **`Ill`**
+3. In the **Exposure Variables** list, check **`ChefSalad`** and **`EggSaladSandwich`**
+4. Leave **Match Variable** set to **— none —** (unmatched analysis)
+5. Leave **Interaction Variables** unchecked (no interaction term)
+6. Click **Run Analysis**
+
+Results will appear immediately, including:
+
+- A terms table showing Odds Ratio, 95% CI, Coefficient, S.E., Z-Statistic, and P-Value for each exposure variable and the CONSTANT
+- Model fit statistics: convergence status, iterations, final −2 × log-likelihood, and cases included
+- Score and Likelihood Ratio test statistics
+
+Expected values from the reference output:
+
+| Term | Odds Ratio | 95% CI Lower | 95% CI Upper | P-Value |
+|---|---|---|---|---|
+| ChefSalad | 3.1424 | 1.6046 | 6.1539 | 0.0008 |
+| EggSaladSandwich | 2.8343 | 1.5300 | 5.2506 | 0.0009 |
+
+| Statistic | Value |
+|---|---|
+| Iterations | 4 |
+| Final −2 × Log-Likelihood | 393.3736 |
+| Cases Included | 309 |
+| Score (df=2) | 14.7777 (p=0.0006) |
+| Likelihood Ratio (df=2) | 15.5999 (p=0.0004) |
+
+To include an interaction term, check **`ChefSalad`** and **`EggSaladSandwich`** under **Interaction Variables** before running. An additional table will appear showing the interaction odds ratios holding each variable fixed.
+
+---
+
 ## Running the test suite
 
 ```

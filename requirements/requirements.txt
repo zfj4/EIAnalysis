@@ -4,6 +4,7 @@ Tech Stack: HTMX, Django, PostgreSQL
 
 Requirements:
 
+Initial version (1.0) of the application shall meet the following requirements:
 * This shall be a single-page application.
 * User shall be able to navigate the local file system and load a JSON text data file into a list of dicts.
 * User shall be able to select from a list of statistical analyses to run on the loaded data object (list of dicts).
@@ -12,3 +13,11 @@ Requirements:
 * Executing Tables Analysis shall run TablesAnalysis from the epiinfo package (https://github.com/Epi-Info/epiinfo) and present all results in well-organized tables.
 * Tables Analysis results shall include a Summary Table at the top, above the per-variable contingency tables, showing one row per 2×2 exposure variable with the following columns: Variable Name, Odds Ratio (OR), ORLL, ORUL, Risk Ratio, RR LL, and RR UL. The Summary Table shall be initially sorted alphabetically (case-insensitive) by Variable Name. The user shall be able to click any column header to sort the table by that column; clicking the same header again shall reverse the sort direction.
 * http://127.0.0.1:8000/ is taken so this application shall use a different localhost URL.
+* The application shall be developed using Django and HTMX, with PostgreSQL as the database.
+
+1.1 Requirements:
+* Add Logistic Regression Analysis to the list of available analyses.
+* Upon selection of Logistic Regression Analysis, the user shall be prompted to select one Outcome Variable and one or more Exposure Variables.
+* User shall have the option to select a Match Variable for matched case-control analysis.
+* User shall have the option to select two or more of the Exposure Variables as Interaction Variables.
+* Executing Logistic Regression Analysis shall run LogisticRegressionAnalysis from the epiinfo package (https://github.com/Epi-Info/epiinfo) and present results in formats similar to those in the two logistic regression analyses in sample_data\Salmonellosis.html.

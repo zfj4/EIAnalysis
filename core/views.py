@@ -1,7 +1,9 @@
 import json
+from itertools import combinations
 
 from django.http import HttpResponseNotAllowed
 from django.shortcuts import render
+from epiinfo.LogisticRegression import LogisticRegression
 from epiinfo.TablesAnalysis import TablesAnalysis
 
 
@@ -182,5 +184,122 @@ def run_analysis(request):
             'exposures': exposures,
             'tables': tables,
             'summary': summary,
+        },
+    )
+
+
+def logistic_form(request):
+    data = request.session.get('data')
+    if not data:
+        return render(
+            request,
+            'core/partials/upload_error.html',
+            {'error': 'No data loaded. Please upload a JSON file first.'},
+            status=400,
+        )
+
+    columns = sorted(data[0].keys(), key=str.casefold) if data else []
+    return render(request, 'core/partials/logistic_form.html', {'columns': columns})
+
+
+def run_logistic(request):
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    data = request.session.get('data')
+    if not data:
+        return render(
+            request,
+            'core/partials/upload_error.html',
+            {'error': 'No data loaded. Please upload a JSON file first.'},
+            status=400,
+        )
+
+    outcome = request.POST.get('outcome_variable', '').strip()
+    exposures = request.POST.getlist('exposure_variables')
+    match_variable = request.POST.get('match_variable', '').strip()
+    interaction_variables = request.POST.getlist('interaction_variables')
+
+    if not outcome:
+        return render(
+            request,
+            'core/partials/upload_error.html',
+            {'error': 'Please select an Outcome Variable.'},
+            status=400,
+        )
+    if not exposures:
+        return render(
+            request,
+            'core/partials/upload_error.html',
+            {'error': 'Please select at least one Exposure Variable.'},
+            status=400,
+        )
+
+    # Build pairwise interaction terms
+    interaction_terms = [
+        f'{a}*{b}' for a, b in combinations(interaction_variables, 2)
+    ] if len(interaction_variables) >= 2 else []
+
+    input_variable_list = {
+        outcome: 'dependvar',
+        'exposureVariables': exposures + interaction_terms,
+    }
+    if match_variable:
+        input_variable_list[match_variable] = 'matchvar'
+
+    lr = LogisticRegression()
+    results = lr.doRegression(input_variable_list, data)
+
+    # Build structured terms list for the template
+    variables = results.Variables
+    n_non_const = len(results.OR)  # OR list excludes CONSTANT
+    terms = []
+    for i, var in enumerate(variables):
+        is_constant = (var == 'CONSTANT')
+        terms.append({
+            'name': var,
+            'is_constant': is_constant,
+            'beta': results.Beta[i],
+            'se': results.SE[i],
+            'z': results.Z[i],
+            'p': results.PZ[i],
+            'or': results.OR[i] if i < n_non_const else None,
+            'or_lcl': results.ORLCL[i] if i < n_non_const else None,
+            'or_ucl': results.ORUCL[i] if i < n_non_const else None,
+        })
+
+    # Group interaction ORs by term name for the template
+    interaction_groups = {}
+    for ior in results.InteractionOR:
+        key = ior[0]
+        if key not in interaction_groups:
+            interaction_groups[key] = []
+        interaction_groups[key].append({
+            'label': ior[1],
+            'or': ior[2],
+            'lcl': ior[3],
+            'ucl': ior[4],
+        })
+
+    return render(
+        request,
+        'core/partials/logistic_results.html',
+        {
+            'outcome': outcome,
+            'exposures': exposures,
+            'match_variable': match_variable,
+            'interaction_variables': interaction_variables,
+            'is_conditional': bool(match_variable),
+            'terms': terms,
+            'iterations': results.Iterations,
+            'minus_two_ll': results.MinusTwoLogLikelihood,
+            'cases_included': results.CasesIncluded,
+            'score': results.Score,
+            'score_df': results.ScoreDF,
+            'score_p': results.ScoreP,
+            'lr': results.LikelihoodRatio,
+            'lr_df': results.LikelihoodRatioDF,
+            'lr_p': results.LikelihoodRatioP,
+            'interaction_groups': interaction_groups,
         },
     )

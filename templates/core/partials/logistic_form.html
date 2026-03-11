@@ -1,0 +1,108 @@
+<div class="max-w-lg space-y-6">
+  <h2 class="text-xl font-semibold">Logistic Regression</h2>
+
+  <form
+    hx-post="{% url 'core:run_logistic' %}"
+    hx-target="#analysis-panel"
+    hx-swap="innerHTML show:#analysis-panel:top"
+    hx-indicator="#logistic-spinner"
+    class="space-y-6"
+  >
+    {% csrf_token %}
+
+    <!-- Outcome Variable -->
+    <div>
+      <label for="outcome_variable" class="block text-sm font-medium text-gray-700 mb-1">
+        Outcome Variable
+      </label>
+      <select
+        id="outcome_variable"
+        name="outcome_variable"
+        required
+        class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2
+               text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+      >
+        <option value="">— select —</option>
+        {% for col in columns %}
+        <option value="{{ col }}">{{ col }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Exposure Variables -->
+    <div>
+      <fieldset>
+        <legend class="block text-sm font-medium text-gray-700 mb-2">
+          Exposure Variables <span class="text-gray-400 font-normal">(select one or more)</span>
+        </legend>
+        <div class="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3 bg-white">
+          {% for col in columns %}
+          <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+            <input
+              type="checkbox"
+              name="exposure_variables"
+              value="{{ col }}"
+              class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            >
+            {{ col }}
+          </label>
+          {% endfor %}
+        </div>
+      </fieldset>
+    </div>
+
+    <!-- Match Variable (optional) -->
+    <div>
+      <label for="match_variable" class="block text-sm font-medium text-gray-700 mb-1">
+        Match Variable <span class="text-gray-400 font-normal">(optional — for matched case-control)</span>
+      </label>
+      <select
+        id="match_variable"
+        name="match_variable"
+        class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2
+               text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+      >
+        <option value="">— none —</option>
+        {% for col in columns %}
+        <option value="{{ col }}">{{ col }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Interaction Variables (optional) -->
+    <div>
+      <fieldset>
+        <legend class="block text-sm font-medium text-gray-700 mb-2">
+          Interaction Variables <span class="text-gray-400 font-normal">(optional — select two or more from your chosen exposures)</span>
+        </legend>
+        <div class="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3 bg-white">
+          {% for col in columns %}
+          <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+            <input
+              type="checkbox"
+              name="interaction_variables"
+              value="{{ col }}"
+              class="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+            >
+            {{ col }}
+          </label>
+          {% endfor %}
+        </div>
+      </fieldset>
+    </div>
+
+    <button
+      type="submit"
+      class="inline-flex items-center gap-2 px-5 py-2 bg-blue-600 text-white
+             text-sm font-semibold rounded-md hover:bg-blue-700 transition-colors"
+    >
+      <span id="logistic-spinner" class="htmx-indicator">
+        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+        </svg>
+      </span>
+      Run Analysis
+    </button>
+  </form>
+</div>
