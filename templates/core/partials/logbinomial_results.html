@@ -58,7 +58,7 @@
           <td class="py-2 px-3 text-right font-mono">{{ term.beta|floatformat:4 }}</td>
           <td class="py-2 px-3 text-right font-mono">{{ term.se|floatformat:4 }}</td>
           <td class="py-2 px-3 text-right font-mono">{{ term.z|floatformat:4 }}</td>
-          <td class="py-2 px-3 text-right font-mono {% if term.p < 0.05 %}font-semibold text-orange-600{% endif %}">{{ term.p|floatformat:4 }}</td>
+          <td class="py-2 px-3 text-right font-mono {% if term.p < 0.05 %}font-semibold text-amber-700{% endif %}">{{ term.p|floatformat:4 }}</td>
         </tr>
         {% endfor %}
       </tbody>
