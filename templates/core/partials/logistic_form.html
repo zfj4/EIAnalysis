@@ -12,14 +12,14 @@
 
     <!-- Outcome Variable -->
     <div>
-      <label for="outcome_variable" class="block text-sm font-medium text-gray-700 mb-1">
+      <label for="outcome_variable" class="block text-sm font-medium text-blue-900 mb-1">
         Outcome Variable
       </label>
       <select
         id="outcome_variable"
         name="outcome_variable"
         required
-        class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2
+        class="block w-full rounded-md border border-blue-200 bg-white px-3 py-2
                text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
       >
         <option value="">— select —</option>
@@ -32,12 +32,12 @@
     <!-- Exposure Variables -->
     <div>
       <fieldset>
-        <legend class="block text-sm font-medium text-gray-700 mb-2">
-          Exposure Variables <span class="text-gray-400 font-normal">(select one or more)</span>
+        <legend class="block text-sm font-medium text-blue-900 mb-2">
+          Exposure Variables <span class="text-blue-400 font-normal">(select one or more)</span>
         </legend>
-        <div class="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3 bg-white">
+        <div class="space-y-2 max-h-48 overflow-y-auto border border-blue-200 rounded-md p-3 bg-white">
           {% for col in columns %}
-          <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+          <label class="flex items-center gap-2 text-sm text-blue-900 cursor-pointer">
             <input
               type="checkbox"
               name="exposure_variables"
@@ -53,13 +53,13 @@
 
     <!-- Match Variable (optional) -->
     <div>
-      <label for="match_variable" class="block text-sm font-medium text-gray-700 mb-1">
-        Match Variable <span class="text-gray-400 font-normal">(optional — for matched case-control)</span>
+      <label for="match_variable" class="block text-sm font-medium text-blue-900 mb-1">
+        Match Variable <span class="text-blue-400 font-normal">(optional — for matched case-control)</span>
       </label>
       <select
         id="match_variable"
         name="match_variable"
-        class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2
+        class="block w-full rounded-md border border-blue-200 bg-white px-3 py-2
                text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
       >
         <option value="">— none —</option>
@@ -72,17 +72,17 @@
     <!-- Interaction Variables (optional) -->
     <div>
       <fieldset>
-        <legend class="block text-sm font-medium text-gray-700 mb-2">
-          Interaction Variables <span class="text-gray-400 font-normal">(optional — select two or more from your chosen exposures)</span>
+        <legend class="block text-sm font-medium text-blue-900 mb-2">
+          Interaction Variables <span class="text-blue-400 font-normal">(optional — select two or more from your chosen exposures)</span>
         </legend>
-        <div class="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3 bg-white">
+        <div class="space-y-2 max-h-48 overflow-y-auto border border-blue-200 rounded-md p-3 bg-white">
           {% for col in columns %}
-          <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+          <label class="flex items-center gap-2 text-sm text-blue-900 cursor-pointer">
             <input
               type="checkbox"
               name="interaction_variables"
               value="{{ col }}"
-              class="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+              class="rounded border-gray-300 text-amber-600 focus:ring-amber-500"
             >
             {{ col }}
           </label>
@@ -93,8 +93,8 @@
 
     <button
       type="submit"
-      class="inline-flex items-center gap-2 px-5 py-2 bg-blue-600 text-white
-             text-sm font-semibold rounded-md hover:bg-blue-700 transition-colors"
+      class="inline-flex items-center gap-2 px-5 py-2 bg-orange-500 text-white
+             text-sm font-semibold rounded-md hover:bg-orange-600 transition-colors"
     >
       <span id="logistic-spinner" class="htmx-indicator">
         <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

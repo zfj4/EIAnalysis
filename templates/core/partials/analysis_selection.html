@@ -1,13 +1,13 @@
-<aside class="w-56 shrink-0">
-  <h2 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Analyses</h2>
+<aside class="w-56 shrink-0 bg-blue-900 rounded-lg p-4">
+  <h2 class="text-xs font-semibold uppercase tracking-wider text-blue-300 mb-3">Analyses</h2>
   <nav class="space-y-1">
     <button
       hx-get="{% url 'core:tables_form' %}"
       hx-target="#analysis-panel"
       hx-swap="innerHTML"
       class="w-full text-left px-3 py-2 rounded-md text-sm font-medium
-             text-gray-700 hover:bg-blue-50 hover:text-blue-700
-             transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+             text-blue-100 hover:bg-blue-700 hover:text-white
+             transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
     >
       Tables Analysis
     </button>
@@ -16,8 +16,8 @@
       hx-target="#analysis-panel"
       hx-swap="innerHTML"
       class="w-full text-left px-3 py-2 rounded-md text-sm font-medium
-             text-gray-700 hover:bg-blue-50 hover:text-blue-700
-             transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+             text-blue-100 hover:bg-blue-700 hover:text-white
+             transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
     >
       Logistic Regression
     </button>
@@ -26,8 +26,8 @@
       hx-target="#analysis-panel"
       hx-swap="innerHTML"
       class="w-full text-left px-3 py-2 rounded-md text-sm font-medium
-             text-gray-700 hover:bg-blue-50 hover:text-blue-700
-             transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+             text-blue-100 hover:bg-blue-700 hover:text-white
+             transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
     >
       Log-Binomial Regression
     </button>
