@@ -188,6 +188,36 @@ To include an interaction term, check **`ChefSalad`** and **`EggSaladSandwich`**
 
 ---
 
+## 11 — Run Log-Binomial Regression
+
+1. In the left sidebar, click **Log-Binomial Regression**
+2. In the **Outcome Variable** dropdown, select **`Ill`**
+3. In the **Exposure Variables** list, check **`ChefSalad`** and **`EggSaladSandwich`**
+4. Leave **Interaction Variables** unchecked (no interaction term)
+5. Click **Run Analysis**
+
+Results will appear immediately, including:
+
+- A terms table showing Risk Ratio, 95% CI, Coefficient, S.E., Z-Statistic, and P-Value for each exposure variable and the CONSTANT
+- Model fit statistics: convergence status, iterations, final log-likelihood, and cases included
+
+Expected values from the reference output:
+
+| Term | Risk Ratio | 95% CI Lower | 95% CI Upper | P-Value |
+|---|---|---|---|---|
+| ChefSalad | 1.3992 | 1.1155 | 1.7550 | 0.0037 |
+| EggSaladSandwich | 1.3325 | 1.1251 | 1.5780 | 0.0009 |
+
+| Statistic | Value |
+|---|---|
+| Iterations | 7 |
+| Final Log-Likelihood | −197.8080 |
+| Cases Included | 309 |
+
+To include an interaction term, check **`ChefSalad`** and **`EggSaladSandwich`** under **Interaction Variables** before running. An additional table will appear showing the interaction risk ratios holding each variable fixed.
+
+---
+
 ## Running the test suite
 
 ```
