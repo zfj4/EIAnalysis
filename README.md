@@ -45,12 +45,19 @@ cd ~/Projects/EIAnalysis
 **Windows**
 ```
 python -m venv .venv
+```
+```
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+```
+```
 .venv\Scripts\activate
 ```
 
 **macOS**
 ```
 python3 -m venv .venv
+```
+```
 source .venv/bin/activate
 ```
 
