@@ -1,5 +1,5 @@
 <div class="max-w-lg">
-  <h2 class="text-xl font-semibold mb-4 text-blue-900">Load Data File</h2>
+  <h2 class="text-xl font-semibold mb-4 text-[#003B6F]">Load Data File</h2>
 
   <form
     hx-post="{% url 'core:upload_json' %}"
@@ -12,25 +12,25 @@
     {% csrf_token %}
 
     <label class="block">
-      <span class="text-sm font-medium text-blue-900">Select a JSON file</span>
+      <span class="text-sm font-medium text-[#003B6F]">Select a JSON file</span>
       <input
         type="file"
         name="json_file"
         accept=".json,application/json"
         required
-        class="mt-1 block w-full text-sm text-blue-800
+        class="mt-1 block w-full text-sm text-[#003B6F]
                file:mr-4 file:py-2 file:px-4
                file:rounded file:border-0
                file:text-sm file:font-semibold
-               file:bg-blue-100 file:text-blue-800
-               hover:file:bg-blue-200 cursor-pointer"
+               file:bg-[#BDD8F2] file:text-[#003B6F]
+               hover:file:bg-[#96BFE0] cursor-pointer"
       >
     </label>
 
     <button
       type="submit"
-      class="inline-flex items-center gap-2 px-4 py-2 bg-amber-700 text-white
-             text-sm font-semibold rounded hover:bg-amber-800 transition-colors"
+      class="inline-flex items-center gap-2 px-4 py-2 bg-[#E0A07A] text-white
+             text-sm font-semibold rounded hover:bg-[#C07D55] transition-colors"
     >
       <span id="upload-spinner" class="htmx-indicator">
         <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

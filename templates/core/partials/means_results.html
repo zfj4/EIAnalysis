@@ -2,19 +2,19 @@
 
   <!-- Header -->
   <div class="flex items-center justify-between">
-    <h2 class="text-xl font-semibold text-blue-900">Means Analysis Results</h2>
+    <h2 class="text-xl font-semibold text-[#318CE7]">Means Analysis Results</h2>
     <button
       hx-get="{% url 'core:means_form' %}"
       hx-target="#analysis-panel"
       hx-swap="innerHTML show:#analysis-panel:top"
-      class="text-sm text-blue-600 hover:underline"
+      class="text-sm text-[#003B6F] hover:underline"
     >
       &#8592; Modify selections
     </button>
   </div>
 
   <!-- Analysis spec -->
-  <div class="text-sm text-blue-700">
+  <div class="text-sm text-[#003B6F]">
     <span class="font-medium">Means Analysis</span>
     &nbsp;|&nbsp;
     <span class="font-mono">{{ means_variable }}</span>
@@ -25,25 +25,25 @@
   </div>
 
   <!-- Descriptive Statistics: Obs / Total / Mean / Variance / Std Dev -->
-  <div class="bg-white border border-blue-100 rounded-lg p-4 shadow-sm overflow-x-auto">
-    <h4 class="text-xs font-semibold uppercase tracking-wider text-blue-700 mb-3">
+  <div class="bg-white border border-[#96BFE0] rounded-lg p-4 shadow-sm overflow-x-auto">
+    <h4 class="text-xs font-semibold uppercase tracking-wider text-[#003B6F] mb-3">
       Descriptive Statistics{% if crosstab_variable %} by {{ crosstab_variable }}{% endif %}
     </h4>
     <table class="min-w-full text-sm">
       <thead>
-        <tr class="border-b border-blue-200">
-          {% if crosstab_variable %}<th class="text-left py-2 pr-4 font-medium text-blue-800">{{ crosstab_variable }}</th>{% endif %}
-          <th class="text-right py-2 px-3 font-medium text-blue-800">Obs</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">Total</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">Mean</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">Variance</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">Std Dev</th>
+        <tr class="border-b border-[#AECDE8]">
+          {% if crosstab_variable %}<th class="text-left py-2 pr-4 font-medium text-[#003B6F]">{{ crosstab_variable }}</th>{% endif %}
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">Obs</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">Total</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">Mean</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">Variance</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">Std Dev</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-blue-50">
+      <tbody class="divide-y divide-[#D6E8F5]">
         {% for g in group_stats %}
         <tr>
-          {% if crosstab_variable %}<td class="py-2 pr-4 font-medium text-blue-900">{{ g.crosstabVariable }}</td>{% endif %}
+          {% if crosstab_variable %}<td class="py-2 pr-4 font-medium text-[#318CE7]">{{ g.crosstabVariable }}</td>{% endif %}
           <td class="py-2 px-3 text-right font-mono">{{ g.obs|floatformat:0 }}</td>
           <td class="py-2 px-3 text-right font-mono">{{ g.total|floatformat:4 }}</td>
           <td class="py-2 px-3 text-right font-mono">{{ g.mean|floatformat:4 }}</td>
@@ -56,23 +56,23 @@
   </div>
 
   <!-- Percentiles -->
-  <div class="bg-white border border-blue-100 rounded-lg p-4 shadow-sm overflow-x-auto">
+  <div class="bg-white border border-[#96BFE0] rounded-lg p-4 shadow-sm overflow-x-auto">
     <table class="min-w-full text-sm">
       <thead>
-        <tr class="border-b border-blue-200">
-          {% if crosstab_variable %}<th class="text-left py-2 pr-4 font-medium text-blue-800">{{ crosstab_variable }}</th>{% endif %}
-          <th class="text-right py-2 px-3 font-medium text-blue-800">Minimum</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">25%</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">Median</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">75%</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">Maximum</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">Mode</th>
+        <tr class="border-b border-[#AECDE8]">
+          {% if crosstab_variable %}<th class="text-left py-2 pr-4 font-medium text-[#003B6F]">{{ crosstab_variable }}</th>{% endif %}
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">Minimum</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">25%</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">Median</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">75%</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">Maximum</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">Mode</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-blue-50">
+      <tbody class="divide-y divide-[#D6E8F5]">
         {% for g in group_stats %}
         <tr>
-          {% if crosstab_variable %}<td class="py-2 pr-4 font-medium text-blue-900">{{ g.crosstabVariable }}</td>{% endif %}
+          {% if crosstab_variable %}<td class="py-2 pr-4 font-medium text-[#318CE7]">{{ g.crosstabVariable }}</td>{% endif %}
           <td class="py-2 px-3 text-right font-mono">{{ g.min|floatformat:4 }}</td>
           <td class="py-2 px-3 text-right font-mono">{{ g.q25|floatformat:4 }}</td>
           <td class="py-2 px-3 text-right font-mono">{{ g.q50|floatformat:4 }}</td>
@@ -86,37 +86,37 @@
   </div>
 
   {% if show_ttest %}
-  <div class="bg-white border border-blue-100 rounded-lg p-4 shadow-sm overflow-x-auto">
-    <h4 class="text-xs font-semibold uppercase tracking-wider text-blue-700 mb-3">T-Test</h4>
+  <div class="bg-white border border-[#96BFE0] rounded-lg p-4 shadow-sm overflow-x-auto">
+    <h4 class="text-xs font-semibold uppercase tracking-wider text-[#003B6F] mb-3">T-Test</h4>
 
     <!-- Mean difference table -->
     <table class="min-w-full text-sm mb-4">
       <thead>
-        <tr class="border-b border-blue-200">
-          <th class="text-left py-2 pr-4 font-medium text-blue-800"></th>
-          <th class="text-left py-2 px-3 font-medium text-blue-800">Method</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">Mean Diff</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">95% LCL</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">95% UCL</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">Std Dev</th>
+        <tr class="border-b border-[#AECDE8]">
+          <th class="text-left py-2 pr-4 font-medium text-[#003B6F]"></th>
+          <th class="text-left py-2 px-3 font-medium text-[#003B6F]">Method</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">Mean Diff</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">95% LCL</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">95% UCL</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">Std Dev</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-blue-50">
+      <tbody class="divide-y divide-[#D6E8F5]">
         <tr>
-          <td class="py-2 pr-4 text-blue-700 text-xs">Diff (Group 1 − Group 2)</td>
-          <td class="py-2 px-3 font-medium text-blue-900">Pooled</td>
+          <td class="py-2 pr-4 text-[#003B6F] text-xs">Diff (Group 1 − Group 2)</td>
+          <td class="py-2 px-3 font-medium text-[#318CE7]">Pooled</td>
           <td class="py-2 px-3 text-right font-mono">{{ ttest.meansDiffPooled|floatformat:4 }}</td>
           <td class="py-2 px-3 text-right font-mono">{{ ttest.lclPooled|floatformat:4 }}</td>
           <td class="py-2 px-3 text-right font-mono">{{ ttest.uclPooled|floatformat:4 }}</td>
           <td class="py-2 px-3 text-right font-mono">{{ ttest.stdDevDiff|floatformat:4 }}</td>
         </tr>
         <tr>
-          <td class="py-2 pr-4 text-blue-700 text-xs">Diff (Group 1 − Group 2)</td>
-          <td class="py-2 px-3 font-medium text-blue-900">Satterthwaite</td>
+          <td class="py-2 pr-4 text-[#003B6F] text-xs">Diff (Group 1 − Group 2)</td>
+          <td class="py-2 px-3 font-medium text-[#318CE7]">Satterthwaite</td>
           <td class="py-2 px-3 text-right font-mono">{{ ttest.meansDiffSatterthwaite|floatformat:4 }}</td>
           <td class="py-2 px-3 text-right font-mono">{{ ttest.lclSatterthwaite|floatformat:4 }}</td>
           <td class="py-2 px-3 text-right font-mono">{{ ttest.uclSatterthwaite|floatformat:4 }}</td>
-          <td class="py-2 px-3 text-right font-mono text-blue-300">&nbsp;</td>
+          <td class="py-2 px-3 text-right font-mono text-[#AECDE8]">&nbsp;</td>
         </tr>
       </tbody>
     </table>
@@ -124,28 +124,28 @@
     <!-- t-value / p-value table -->
     <table class="min-w-full text-sm">
       <thead>
-        <tr class="border-b border-blue-200">
-          <th class="text-left py-2 pr-4 font-medium text-blue-800">Method</th>
-          <th class="text-left py-2 px-3 font-medium text-blue-800">Variances</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">DF</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">t Value</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">Pr &gt; |t|</th>
+        <tr class="border-b border-[#AECDE8]">
+          <th class="text-left py-2 pr-4 font-medium text-[#003B6F]">Method</th>
+          <th class="text-left py-2 px-3 font-medium text-[#003B6F]">Variances</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">DF</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">t Value</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">Pr &gt; |t|</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-blue-50">
+      <tbody class="divide-y divide-[#D6E8F5]">
         <tr>
-          <td class="py-2 pr-4 font-medium text-blue-900">Pooled</td>
-          <td class="py-2 px-3 text-blue-700">Equal</td>
+          <td class="py-2 pr-4 font-medium text-[#318CE7]">Pooled</td>
+          <td class="py-2 px-3 text-[#003B6F]">Equal</td>
           <td class="py-2 px-3 text-right font-mono">{{ ttest.pooledDF }}</td>
           <td class="py-2 px-3 text-right font-mono">{{ ttest.pooledT|floatformat:4 }}</td>
-          <td class="py-2 px-3 text-right font-mono {% if ttest.pooledPT < 0.05 %}font-semibold text-amber-700{% endif %}">{{ ttest.pooledPT|floatformat:4 }}</td>
+          <td class="py-2 px-3 text-right font-mono {% if ttest.pooledPT < 0.05 %}font-semibold text-[#B84A0A]{% endif %}">{{ ttest.pooledPT|floatformat:4 }}</td>
         </tr>
         <tr>
-          <td class="py-2 pr-4 font-medium text-blue-900">Satterthwaite</td>
-          <td class="py-2 px-3 text-blue-700">Unequal</td>
+          <td class="py-2 pr-4 font-medium text-[#318CE7]">Satterthwaite</td>
+          <td class="py-2 px-3 text-[#003B6F]">Unequal</td>
           <td class="py-2 px-3 text-right font-mono">{{ ttest.SatterthwaiteDF|floatformat:2 }}</td>
           <td class="py-2 px-3 text-right font-mono">{{ ttest.SatterthwaiteT|floatformat:4 }}</td>
-          <td class="py-2 px-3 text-right font-mono {% if ttest.SatterthwaitePT < 0.05 %}font-semibold text-amber-700{% endif %}">{{ ttest.SatterthwaitePT|floatformat:4 }}</td>
+          <td class="py-2 px-3 text-right font-mono {% if ttest.SatterthwaitePT < 0.05 %}font-semibold text-[#B84A0A]{% endif %}">{{ ttest.SatterthwaitePT|floatformat:4 }}</td>
         </tr>
       </tbody>
     </table>
@@ -153,67 +153,67 @@
   {% endif %}
 
   {% if anova %}
-  <div class="bg-white border border-blue-100 rounded-lg p-4 shadow-sm overflow-x-auto">
-    <h4 class="text-xs font-semibold uppercase tracking-wider text-blue-700 mb-1">ANOVA</h4>
-    <p class="text-xs text-blue-500 mb-3">Parametric test for inequality of population means (normally distributed data only)</p>
+  <div class="bg-white border border-[#96BFE0] rounded-lg p-4 shadow-sm overflow-x-auto">
+    <h4 class="text-xs font-semibold uppercase tracking-wider text-[#003B6F] mb-1">ANOVA</h4>
+    <p class="text-xs text-[#003B6F] mb-3">Parametric test for inequality of population means (normally distributed data only)</p>
     <table class="min-w-full text-sm mb-3">
       <thead>
-        <tr class="border-b border-blue-200">
-          <th class="text-left py-2 pr-4 font-medium text-blue-800">Variation</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">SS</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">df</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">MS</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">F Statistic</th>
+        <tr class="border-b border-[#AECDE8]">
+          <th class="text-left py-2 pr-4 font-medium text-[#003B6F]">Variation</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">SS</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">df</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">MS</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">F Statistic</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-blue-50">
+      <tbody class="divide-y divide-[#D6E8F5]">
         <tr>
-          <td class="py-2 pr-4 font-medium text-blue-900">Between</td>
+          <td class="py-2 pr-4 font-medium text-[#318CE7]">Between</td>
           <td class="py-2 px-3 text-right font-mono">{{ anova.ssBetween|floatformat:5 }}</td>
           <td class="py-2 px-3 text-right font-mono">{{ anova.dfBetween }}</td>
           <td class="py-2 px-3 text-right font-mono">{{ anova.msBetween|floatformat:5 }}</td>
           <td class="py-2 px-3 text-right font-mono font-semibold">{{ anova.fStatistic|floatformat:4 }}</td>
         </tr>
         <tr>
-          <td class="py-2 pr-4 font-medium text-blue-900">Within</td>
+          <td class="py-2 pr-4 font-medium text-[#318CE7]">Within</td>
           <td class="py-2 px-3 text-right font-mono">{{ anova.ssWithin|floatformat:5 }}</td>
           <td class="py-2 px-3 text-right font-mono">{{ anova.dfWithin|floatformat:0 }}</td>
           <td class="py-2 px-3 text-right font-mono">{{ anova.msWithin|floatformat:5 }}</td>
-          <td class="py-2 px-3 text-right font-mono text-blue-300">&nbsp;</td>
+          <td class="py-2 px-3 text-right font-mono text-[#AECDE8]">&nbsp;</td>
         </tr>
-        <tr class="bg-blue-50 font-semibold">
-          <td class="py-2 pr-4 text-blue-900">Total</td>
+        <tr class="bg-[#EBF4FC] font-semibold">
+          <td class="py-2 pr-4 text-[#318CE7]">Total</td>
           <td class="py-2 px-3 text-right font-mono">{{ anova.ssTotal|floatformat:5 }}</td>
           <td class="py-2 px-3 text-right font-mono">{{ anova.dfTotal|floatformat:0 }}</td>
-          <td class="py-2 px-3 text-right font-mono text-blue-300">&nbsp;</td>
-          <td class="py-2 px-3 text-right font-mono text-blue-300">&nbsp;</td>
+          <td class="py-2 px-3 text-right font-mono text-[#AECDE8]">&nbsp;</td>
+          <td class="py-2 px-3 text-right font-mono text-[#AECDE8]">&nbsp;</td>
         </tr>
       </tbody>
     </table>
-    <p class="text-sm text-blue-800">
+    <p class="text-sm text-[#003B6F]">
       P-value =
-      <span class="font-mono {% if anova.anovaPValue < 0.05 %}font-semibold text-amber-700{% endif %}">{{ anova.anovaPValue|floatformat:5 }}</span>
+      <span class="font-mono {% if anova.anovaPValue < 0.05 %}font-semibold text-[#B84A0A]{% endif %}">{{ anova.anovaPValue|floatformat:5 }}</span>
     </p>
   </div>
 
   <!-- Bartlett's Test -->
-  <div class="bg-white border border-blue-100 rounded-lg p-4 shadow-sm">
-    <h4 class="text-xs font-semibold uppercase tracking-wider text-blue-700 mb-2">Bartlett's Test for Inequality of Population Variances</h4>
-    <p class="text-sm text-blue-800">
+  <div class="bg-white border border-[#96BFE0] rounded-lg p-4 shadow-sm">
+    <h4 class="text-xs font-semibold uppercase tracking-wider text-[#003B6F] mb-2">Bartlett's Test for Inequality of Population Variances</h4>
+    <p class="text-sm text-[#003B6F]">
       Chi square = <span class="font-mono">{{ anova.bartlettChiSquare|floatformat:5 }}</span>
       &nbsp;&nbsp;df = <span class="font-mono">{{ anova.dfBetween }}</span>
-      &nbsp;&nbsp;P-value = <span class="font-mono {% if anova.bartlettPValue < 0.05 %}font-semibold text-amber-700{% endif %}">{{ anova.bartlettPValue|floatformat:5 }}</span>
+      &nbsp;&nbsp;P-value = <span class="font-mono {% if anova.bartlettPValue < 0.05 %}font-semibold text-[#B84A0A]{% endif %}">{{ anova.bartlettPValue|floatformat:5 }}</span>
     </p>
-    <p class="text-xs text-blue-500 mt-1">A small p-value (e.g., less than 0.05) suggests that the variances are not homogeneous and that the ANOVA may not be appropriate.</p>
+    <p class="text-xs text-[#003B6F] mt-1">A small p-value (e.g., less than 0.05) suggests that the variances are not homogeneous and that the ANOVA may not be appropriate.</p>
   </div>
 
   <!-- Kruskal-Wallis -->
-  <div class="bg-white border border-blue-100 rounded-lg p-4 shadow-sm">
-    <h4 class="text-xs font-semibold uppercase tracking-wider text-blue-700 mb-2">Mann-Whitney / Wilcoxon Two-Sample Test (Kruskal-Wallis)</h4>
-    <p class="text-sm text-blue-800">
+  <div class="bg-white border border-[#96BFE0] rounded-lg p-4 shadow-sm">
+    <h4 class="text-xs font-semibold uppercase tracking-wider text-[#003B6F] mb-2">Mann-Whitney / Wilcoxon Two-Sample Test (Kruskal-Wallis)</h4>
+    <p class="text-sm text-[#003B6F]">
       H = <span class="font-mono">{{ anova.kruskalWallisH|floatformat:4 }}</span>
       &nbsp;&nbsp;df = <span class="font-mono">{{ anova.kruskalWallisDF }}</span>
-      &nbsp;&nbsp;P-value = <span class="font-mono {% if anova.kruskalPValue < 0.05 %}font-semibold text-amber-700{% endif %}">{{ anova.kruskalPValue|floatformat:4 }}</span>
+      &nbsp;&nbsp;P-value = <span class="font-mono {% if anova.kruskalPValue < 0.05 %}font-semibold text-[#B84A0A]{% endif %}">{{ anova.kruskalPValue|floatformat:4 }}</span>
     </p>
   </div>
   {% endif %}

@@ -2,19 +2,19 @@
 
   <!-- Header -->
   <div class="flex items-center justify-between">
-    <h2 class="text-xl font-semibold text-blue-900">Logistic Regression Results</h2>
+    <h2 class="text-xl font-semibold text-[#318CE7]">Logistic Regression Results</h2>
     <button
       hx-get="{% url 'core:logistic_form' %}"
       hx-target="#analysis-panel"
       hx-swap="innerHTML show:#analysis-panel:top"
-      class="text-sm text-blue-600 hover:underline"
+      class="text-sm text-[#003B6F] hover:underline"
     >
       &#8592; Modify selections
     </button>
   </div>
 
   <!-- Analysis type & model spec -->
-  <div class="text-sm text-blue-700">
+  <div class="text-sm text-[#003B6F]">
     <span class="font-medium">
       {% if is_conditional %}Conditional{% else %}Unconditional{% endif %}
       Logistic Regression
@@ -23,7 +23,7 @@
     <span class="font-mono">{{ outcome }} = {{ exposures|join:", " }}</span>
     {% if interaction_variables %}
     &nbsp;+&nbsp;
-    <span class="font-mono text-amber-700">
+    <span class="font-mono text-[#003B6F]">
       {% for iv in interaction_variables %}{{ iv }}{% if not forloop.last %} &#215; {% endif %}{% endfor %}
       interaction
     </span>
@@ -31,28 +31,28 @@
   </div>
 
   <!-- Terms Table -->
-  <div class="bg-white border border-blue-100 rounded-lg p-4 shadow-sm overflow-x-auto">
+  <div class="bg-white border border-[#96BFE0] rounded-lg p-4 shadow-sm overflow-x-auto">
     <table class="min-w-full text-sm">
       <thead>
-        <tr class="border-b border-blue-200">
-          <th class="text-left py-2 pr-4 font-medium text-blue-800 w-56">Term</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">Odds Ratio</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">95% CI<br>Lower</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">95% CI<br>Upper</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">Coefficient</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">S.E.</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">Z-Statistic</th>
-          <th class="text-right py-2 px-3 font-medium text-blue-800">P-Value</th>
+        <tr class="border-b border-[#AECDE8]">
+          <th class="text-left py-2 pr-4 font-medium text-[#003B6F] w-56">Term</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">Odds Ratio</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">95% CI<br>Lower</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">95% CI<br>Upper</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">Coefficient</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">S.E.</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">Z-Statistic</th>
+          <th class="text-right py-2 px-3 font-medium text-[#003B6F]">P-Value</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-blue-50">
+      <tbody class="divide-y divide-[#D6E8F5]">
         {% for term in terms %}
-        <tr class="{% if term.is_constant %}bg-blue-50{% endif %}">
-          <td class="py-2 pr-4 font-medium text-blue-900">{{ term.name }}</td>
+        <tr class="{% if term.is_constant %}bg-[#EBF4FC]{% endif %}">
+          <td class="py-2 pr-4 font-medium text-[#318CE7]">{{ term.name }}</td>
           {% if term.is_constant %}
-          <td class="py-2 px-3 text-right text-blue-300">*</td>
-          <td class="py-2 px-3 text-right text-blue-300">*</td>
-          <td class="py-2 px-3 text-right text-blue-300">*</td>
+          <td class="py-2 px-3 text-right text-[#AECDE8]">*</td>
+          <td class="py-2 px-3 text-right text-[#AECDE8]">*</td>
+          <td class="py-2 px-3 text-right text-[#AECDE8]">*</td>
           {% else %}
           <td class="py-2 px-3 text-right font-mono {% if term.p < 0.05 %}font-semibold{% endif %}">{{ term.or|floatformat:4 }}</td>
           <td class="py-2 px-3 text-right font-mono">{{ term.or_lcl|floatformat:4 }}</td>
@@ -61,7 +61,7 @@
           <td class="py-2 px-3 text-right font-mono">{{ term.beta|floatformat:4 }}</td>
           <td class="py-2 px-3 text-right font-mono">{{ term.se|floatformat:4 }}</td>
           <td class="py-2 px-3 text-right font-mono">{{ term.z|floatformat:4 }}</td>
-          <td class="py-2 px-3 text-right font-mono {% if term.p < 0.05 %}font-semibold text-amber-700{% endif %}">{{ term.p|floatformat:4 }}</td>
+          <td class="py-2 px-3 text-right font-mono {% if term.p < 0.05 %}font-semibold text-[#B84A0A]{% endif %}">{{ term.p|floatformat:4 }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -69,24 +69,24 @@
   </div>
 
   <!-- Model Fit Statistics -->
-  <div class="bg-white border border-blue-100 rounded-lg p-4 shadow-sm overflow-x-auto">
-    <h4 class="text-xs font-semibold uppercase tracking-wider text-blue-700 mb-3">Model Fit</h4>
+  <div class="bg-white border border-[#96BFE0] rounded-lg p-4 shadow-sm overflow-x-auto">
+    <h4 class="text-xs font-semibold uppercase tracking-wider text-[#003B6F] mb-3">Model Fit</h4>
     <table class="text-sm">
-      <tbody class="divide-y divide-blue-50">
+      <tbody class="divide-y divide-[#D6E8F5]">
         <tr>
-          <td class="py-1 pr-8 text-blue-800">Convergence</td>
+          <td class="py-1 pr-8 text-[#003B6F]">Convergence</td>
           <td class="py-1 font-mono">Converged</td>
         </tr>
         <tr>
-          <td class="py-1 pr-8 text-blue-800">Iterations</td>
+          <td class="py-1 pr-8 text-[#003B6F]">Iterations</td>
           <td class="py-1 font-mono">{{ iterations }}</td>
         </tr>
         <tr>
-          <td class="py-1 pr-8 text-blue-800">Final &minus;2 &times; Log-Likelihood</td>
+          <td class="py-1 pr-8 text-[#003B6F]">Final &minus;2 &times; Log-Likelihood</td>
           <td class="py-1 font-mono">{{ minus_two_ll|floatformat:4 }}</td>
         </tr>
         <tr>
-          <td class="py-1 pr-8 text-blue-800">Cases Included</td>
+          <td class="py-1 pr-8 text-[#003B6F]">Cases Included</td>
           <td class="py-1 font-mono">{{ cases_included }}</td>
         </tr>
       </tbody>
@@ -94,29 +94,29 @@
   </div>
 
   <!-- Score & Likelihood Ratio Tests -->
-  <div class="bg-white border border-blue-100 rounded-lg p-4 shadow-sm overflow-x-auto">
-    <h4 class="text-xs font-semibold uppercase tracking-wider text-blue-700 mb-3">Model Tests</h4>
+  <div class="bg-white border border-[#96BFE0] rounded-lg p-4 shadow-sm overflow-x-auto">
+    <h4 class="text-xs font-semibold uppercase tracking-wider text-[#003B6F] mb-3">Model Tests</h4>
     <table class="min-w-full text-sm">
       <thead>
-        <tr class="border-b border-blue-200">
-          <th class="text-left py-1 pr-6 font-medium text-blue-800">Test</th>
-          <th class="text-right py-1 pr-6 font-medium text-blue-800">Statistic</th>
-          <th class="text-right py-1 pr-6 font-medium text-blue-800">D.F.</th>
-          <th class="text-right py-1 font-medium text-blue-800">P-Value</th>
+        <tr class="border-b border-[#AECDE8]">
+          <th class="text-left py-1 pr-6 font-medium text-[#003B6F]">Test</th>
+          <th class="text-right py-1 pr-6 font-medium text-[#003B6F]">Statistic</th>
+          <th class="text-right py-1 pr-6 font-medium text-[#003B6F]">D.F.</th>
+          <th class="text-right py-1 font-medium text-[#003B6F]">P-Value</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-blue-50">
+      <tbody class="divide-y divide-[#D6E8F5]">
         <tr>
-          <td class="py-1 pr-6 text-blue-800">Score</td>
+          <td class="py-1 pr-6 text-[#003B6F]">Score</td>
           <td class="py-1 pr-6 text-right font-mono">{{ score|floatformat:4 }}</td>
           <td class="py-1 pr-6 text-right font-mono">{{ score_df }}</td>
-          <td class="py-1 text-right font-mono {% if score_p < 0.05 %}font-semibold text-amber-700{% endif %}">{{ score_p|floatformat:4 }}</td>
+          <td class="py-1 text-right font-mono {% if score_p < 0.05 %}font-semibold text-[#B84A0A]{% endif %}">{{ score_p|floatformat:4 }}</td>
         </tr>
         <tr>
-          <td class="py-1 pr-6 text-blue-800">Likelihood Ratio</td>
+          <td class="py-1 pr-6 text-[#003B6F]">Likelihood Ratio</td>
           <td class="py-1 pr-6 text-right font-mono">{{ lr|floatformat:4 }}</td>
           <td class="py-1 pr-6 text-right font-mono">{{ lr_df }}</td>
-          <td class="py-1 text-right font-mono {% if lr_p < 0.05 %}font-semibold text-amber-700{% endif %}">{{ lr_p|floatformat:4 }}</td>
+          <td class="py-1 text-right font-mono {% if lr_p < 0.05 %}font-semibold text-[#B84A0A]{% endif %}">{{ lr_p|floatformat:4 }}</td>
         </tr>
       </tbody>
     </table>
@@ -124,23 +124,23 @@
 
   <!-- Interaction Odds Ratios (shown only when interactions were specified) -->
   {% for term_name, rows in interaction_groups.items %}
-  <div class="bg-white border border-blue-100 rounded-lg p-4 shadow-sm overflow-x-auto">
-    <h4 class="text-xs font-semibold uppercase tracking-wider text-blue-700 mb-3">
+  <div class="bg-white border border-[#96BFE0] rounded-lg p-4 shadow-sm overflow-x-auto">
+    <h4 class="text-xs font-semibold uppercase tracking-wider text-[#003B6F] mb-3">
       Odds Ratios for {{ term_name }} Interaction
     </h4>
     <table class="min-w-full text-sm">
       <thead>
-        <tr class="border-b border-blue-200">
-          <th class="text-left py-1 pr-6 font-medium text-blue-800">Label</th>
-          <th class="text-right py-1 pr-6 font-medium text-blue-800">Estimate</th>
-          <th class="text-right py-1 pr-6 font-medium text-blue-800">95% CI Lower</th>
-          <th class="text-right py-1 font-medium text-blue-800">95% CI Upper</th>
+        <tr class="border-b border-[#AECDE8]">
+          <th class="text-left py-1 pr-6 font-medium text-[#003B6F]">Label</th>
+          <th class="text-right py-1 pr-6 font-medium text-[#003B6F]">Estimate</th>
+          <th class="text-right py-1 pr-6 font-medium text-[#003B6F]">95% CI Lower</th>
+          <th class="text-right py-1 font-medium text-[#003B6F]">95% CI Upper</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-blue-50">
+      <tbody class="divide-y divide-[#D6E8F5]">
         {% for row in rows %}
         <tr>
-          <td class="py-1 pr-6 text-blue-800">{{ row.label }}</td>
+          <td class="py-1 pr-6 text-[#003B6F]">{{ row.label }}</td>
           <td class="py-1 pr-6 text-right font-mono">{{ row.or|floatformat:6 }}</td>
           <td class="py-1 pr-6 text-right font-mono">{{ row.lcl|floatformat:6 }}</td>
           <td class="py-1 text-right font-mono">{{ row.ucl|floatformat:6 }}</td>

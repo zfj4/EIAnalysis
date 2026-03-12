@@ -8,7 +8,9 @@
       "Bash(git -C c:/GitHub/EIAnalysis.wiki pull --rebase origin master)",
       "Bash(git -C c:/GitHub/EIAnalysis.wiki push origin master)",
       "Bash(git -C c:/GitHub/EIAnalysis.wiki add Home.md)",
-      "Bash(git -C c:/GitHub/EIAnalysis.wiki rebase --continue)"
+      "Bash(git -C c:/GitHub/EIAnalysis.wiki rebase --continue)",
+      "Bash(python:*)",
+      "Bash(python3 -:*)"
     ]
   }
 }

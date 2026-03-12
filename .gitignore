@@ -180,5 +180,5 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
-# Session notes
-session_prompts.txt
+# Local utilities (color palette, session notes, etc.)
+utilities/

@@ -7,32 +7,32 @@
   <div id="analysis-panel" class="flex-1 min-w-0 space-y-6">
 
     <!-- Success banner -->
-    <div class="flex items-center gap-3 p-4 bg-blue-100 border border-blue-300 rounded-lg">
-      <svg class="h-5 w-5 text-blue-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div class="flex items-center gap-3 p-4 bg-[#BDD8F2] border border-[#AECDE8] rounded-lg">
+      <svg class="h-5 w-5 text-[#003B6F] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
       </svg>
-      <p class="text-blue-900 font-medium">Data Loaded — select an analysis from the sidebar</p>
+      <p class="text-[#003B6F] font-medium">Data Loaded — select an analysis from the sidebar</p>
     </div>
 
     <!-- Summary card -->
-    <div class="bg-white border border-blue-100 rounded-lg p-6 shadow-sm space-y-4">
-      <h2 class="text-lg font-semibold text-blue-900">File Summary</h2>
+    <div class="bg-white border border-[#96BFE0] rounded-lg p-6 shadow-sm space-y-4">
+      <h2 class="text-lg font-semibold text-[#318CE7]">File Summary</h2>
 
       <dl class="grid grid-cols-2 gap-4 text-sm">
         <div>
-          <dt class="text-blue-600">Filename</dt>
-          <dd class="font-medium text-blue-900 truncate">{{ filename }}</dd>
+          <dt class="text-[#003B6F]">Filename</dt>
+          <dd class="font-medium text-[#318CE7] truncate">{{ filename }}</dd>
         </div>
         <div>
-          <dt class="text-blue-600">Rows</dt>
-          <dd class="font-medium text-blue-900">{{ row_count }}</dd>
+          <dt class="text-[#003B6F]">Rows</dt>
+          <dd class="font-medium text-[#318CE7]">{{ row_count }}</dd>
         </div>
         {% if columns %}
         <div class="col-span-2">
-          <dt class="text-blue-600 mb-1">Columns ({{ columns|length }})</dt>
+          <dt class="text-[#003B6F] mb-1">Columns ({{ columns|length }})</dt>
           <dd class="flex flex-wrap gap-2">
             {% for col in columns %}
-            <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-mono">{{ col }}</span>
+            <span class="px-2 py-0.5 bg-[#BDD8F2] text-[#003B6F] rounded text-xs font-mono">{{ col }}</span>
             {% endfor %}
           </dd>
         </div>
@@ -46,7 +46,7 @@
       hx-target="#main-content"
       hx-swap="innerHTML"
       hx-select="#main-content > *"
-      class="text-sm text-blue-600 hover:underline"
+      class="text-sm text-[#003B6F] hover:underline"
     >
       &#8592; Load a different file
     </button>

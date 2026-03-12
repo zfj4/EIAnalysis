@@ -1,5 +1,5 @@
 <div class="max-w-lg space-y-6">
-  <h2 class="text-xl font-semibold text-blue-900">Means Analysis</h2>
+  <h2 class="text-xl font-semibold text-[#318CE7]">Means Analysis</h2>
 
   <form
     hx-post="{% url 'core:run_means' %}"
@@ -12,15 +12,15 @@
 
     <!-- Means Of Variable -->
     <div>
-      <label for="means_variable" class="block text-sm font-medium text-blue-900 mb-1">
+      <label for="means_variable" class="block text-sm font-medium text-[#318CE7] mb-1">
         Means Of
       </label>
       <select
         id="means_variable"
         name="means_variable"
         required
-        class="block w-full rounded-md border border-blue-200 bg-white px-3 py-2
-               text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+        class="block w-full rounded-md border border-[#AECDE8] bg-white px-3 py-2
+               text-sm shadow-sm focus:border-[#003B6F] focus:ring-1 focus:ring-[#003B6F]"
       >
         <option value="">— select —</option>
         {% for col in columns %}
@@ -31,14 +31,14 @@
 
     <!-- Cross-tabulate Variable (optional) -->
     <div>
-      <label for="crosstab_variable" class="block text-sm font-medium text-blue-900 mb-1">
-        Cross-tabulate <span class="text-blue-400 font-normal">(optional)</span>
+      <label for="crosstab_variable" class="block text-sm font-medium text-[#318CE7] mb-1">
+        Cross-tabulate <span class="font-normal">(optional)</span>
       </label>
       <select
         id="crosstab_variable"
         name="crosstab_variable"
-        class="block w-full rounded-md border border-blue-200 bg-white px-3 py-2
-               text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+        class="block w-full rounded-md border border-[#AECDE8] bg-white px-3 py-2
+               text-sm shadow-sm focus:border-[#003B6F] focus:ring-1 focus:ring-[#003B6F]"
       >
         <option value="">— none —</option>
         {% for col in columns %}
@@ -49,8 +49,8 @@
 
     <button
       type="submit"
-      class="inline-flex items-center gap-2 px-5 py-2 bg-amber-700 text-white
-             text-sm font-semibold rounded-md hover:bg-amber-800 transition-colors"
+      class="inline-flex items-center gap-2 px-5 py-2 bg-[#E0A07A] text-white
+             text-sm font-semibold rounded-md hover:bg-[#C07D55] transition-colors"
     >
       <span id="means-spinner" class="htmx-indicator">
         <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
