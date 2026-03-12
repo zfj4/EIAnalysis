@@ -3,6 +3,7 @@ from itertools import combinations
 
 from django.http import HttpResponseNotAllowed
 from django.shortcuts import render
+from epiinfo.LinearRegression import LinearRegression
 from epiinfo.LogBinomialRegression import LogBinomialRegression
 from epiinfo.LogisticRegression import LogisticRegression
 from epiinfo.TablesAnalysis import TablesAnalysis
@@ -185,6 +186,115 @@ def run_analysis(request):
             'exposures': exposures,
             'tables': tables,
             'summary': summary,
+        },
+    )
+
+
+def linear_form(request):
+    data = request.session.get('data')
+    if not data:
+        return render(
+            request,
+            'core/partials/upload_error.html',
+            {'error': 'No data loaded. Please upload a JSON file first.'},
+            status=400,
+        )
+
+    columns = sorted(data[0].keys(), key=str.casefold) if data else []
+    return render(request, 'core/partials/linear_form.html', {'columns': columns})
+
+
+def run_linear(request):
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    data = request.session.get('data')
+    if not data:
+        return render(
+            request,
+            'core/partials/upload_error.html',
+            {'error': 'No data loaded. Please upload a JSON file first.'},
+            status=400,
+        )
+
+    outcome = request.POST.get('outcome_variable', '').strip()
+    exposures = request.POST.getlist('exposure_variables')
+    interaction_variables = request.POST.getlist('interaction_variables')
+
+    if not outcome:
+        return render(
+            request,
+            'core/partials/upload_error.html',
+            {'error': 'Please select an Outcome Variable.'},
+            status=400,
+        )
+    if not exposures:
+        return render(
+            request,
+            'core/partials/upload_error.html',
+            {'error': 'Please select at least one Exposure Variable.'},
+            status=400,
+        )
+
+    interaction_terms = [
+        f'{a}*{b}' for a, b in combinations(interaction_variables, 2)
+    ] if len(interaction_variables) >= 2 else []
+
+    if interaction_terms:
+        data_for_regression = []
+        for record in data:
+            row = dict(record)
+            for term in interaction_terms:
+                a, b = term.split('*')
+                try:
+                    row[term] = float(record[a]) * float(record[b])
+                except (ValueError, TypeError, KeyError):
+                    row[term] = None
+            data_for_regression.append(row)
+    else:
+        data_for_regression = data
+
+    lr = LinearRegression()
+    results = lr.doRegression(
+        {'dependvar': outcome, 'exposureVariables': exposures + interaction_terms},
+        data_for_regression,
+    )
+
+    terms = []
+    stats = {}
+    for res in results:
+        if isinstance(res, dict) and 'variable' in res:
+            terms.append({
+                'name': res['variable'],
+                'is_constant': res['variable'] == 'CONSTANT',
+                'beta': res['beta'],
+                'lcl': res['lcl'],
+                'ucl': res['ucl'],
+                'se': res['stderror'],
+                'f': res['ftest'],
+                'p': res['pvalue'],
+            })
+        elif isinstance(res, dict) and 'r2' in res:
+            stats = res
+
+    return render(
+        request,
+        'core/partials/linear_results.html',
+        {
+            'outcome': outcome,
+            'exposures': exposures,
+            'interaction_variables': interaction_variables,
+            'terms': terms,
+            'r2': stats.get('r2'),
+            'regression_df': stats.get('regressionDF'),
+            'regression_ss': stats.get('sumOfSquares'),
+            'regression_ms': stats.get('meanSquare'),
+            'regression_f': stats.get('fStatistic'),
+            'residuals_df': stats.get('residualsDF'),
+            'residuals_ss': stats.get('residualsSS'),
+            'residuals_ms': stats.get('residualsMS'),
+            'total_df': stats.get('totalDF'),
+            'total_ss': stats.get('totalSS'),
         },
     )
 

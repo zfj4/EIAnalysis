@@ -218,6 +218,40 @@ To include an interaction term, check **`ChefSalad`** and **`EggSaladSandwich`**
 
 ---
 
+## 12 — Run Linear Regression
+
+This example uses the `BabyBloodPressure.json` sample dataset included in the `sample_data` folder. Load it first (step 8), then:
+
+1. In the left sidebar, click **Linear Regression**
+2. In the **Outcome Variable** dropdown, select **`SystolicBlood`**
+3. In the **Exposure Variables** list, check **`AgeInDays`** and **`Birthweight`**
+4. Leave **Interaction Variables** unchecked (no interaction term)
+5. Click **Run Analysis**
+
+Results will appear immediately, including:
+
+- A terms table showing Coefficient, 95% LCL/UCL, Standard Error, F-test, and P-Value for each predictor and the CONSTANT
+- Correlation coefficient (R²)
+- Analysis of Variance table: Regression, Residuals, and Total rows with df, Sum of Squares, Mean Square, and F-statistic
+
+Expected values from the reference output:
+
+| Variable | Coefficient | 95% LCL | 95% UCL | P-Value |
+|---|---|---|---|---|
+| AgeInDays | 5.888 | 4.418 | 7.357 | < 0.0001 |
+| Birthweight | 0.126 | 0.051 | 0.200 | 0.0029 |
+| CONSTANT | 53.450 | 43.660 | 63.241 | < 0.0001 |
+
+| Statistic | Value |
+|---|---|
+| R² | 0.88 |
+| Regression F (df=2) | 48.081 |
+| Residuals df | 13 |
+
+To include an interaction term, check **`AgeInDays`** and **`Birthweight`** under **Interaction Variables** before running. The interaction term `AgeInDays*Birthweight` will appear in the terms table. With the interaction, R² rises to 0.92.
+
+---
+
 ## Running the test suite
 
 ```

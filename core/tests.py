@@ -1409,3 +1409,493 @@ class LogBinomialIntegrationTests(TestCase):
         response = self._run(interactions=['ChefSalad', 'EggSaladSandwich'])
         self.assertContains(response, 'Risk Ratio')
         self.assertContains(response, 'Interaction')
+
+
+# ---------------------------------------------------------------------------
+# Shared mock for LinearRegression.doRegression()
+# Returns a list of dicts (not a SimpleNamespace object)
+# ---------------------------------------------------------------------------
+MOCK_LINEAR_RESULT = [
+    {
+        'variable': 'exposure',
+        'beta': 5.888, 'lcl': 4.418, 'ucl': 7.357,
+        'stderror': 0.680, 'ftest': 74.9229, 'pvalue': 0.000001,
+    },
+    {
+        'variable': 'CONSTANT',
+        'beta': 53.450, 'lcl': 43.660, 'ucl': 63.241,
+        'stderror': 4.532, 'ftest': 139.1042, 'pvalue': 0.000000,
+    },
+    {
+        'r2': 0.88,
+        'regressionDF': 1, 'sumOfSquares': 591.036,
+        'meanSquare': 591.036, 'fStatistic': 74.923,
+        'residualsDF': 14, 'residualsSS': 79.902,
+        'residualsMS': 5.707,
+        'totalDF': 15, 'totalSS': 670.938,
+    },
+]
+
+BABY_BP_PATH = Path(__file__).resolve().parent.parent / 'sample_data' / 'BabyBloodPressure.json'
+
+
+# ===========================================================================
+# LinearFormViewTests
+# ===========================================================================
+
+class LinearFormViewTests(TestCase):
+    """TDD tests for the linear regression variable-selection form view."""
+
+    URL = 'core:linear_form'
+
+    def _set_session_data(self):
+        session = self.client.session
+        session['data'] = SAMPLE_DATA
+        session['data_filename'] = 'sample.json'
+        session.save()
+
+    def test_requires_session_data(self):
+        """GET without loaded data must return 400."""
+        response = self.client.get(reverse(self.URL))
+        self.assertEqual(response.status_code, 400)
+
+    def test_returns_200_with_session_data(self):
+        self._set_session_data()
+        response = self.client.get(reverse(self.URL))
+        self.assertEqual(response.status_code, 200)
+
+    def test_uses_correct_template(self):
+        self._set_session_data()
+        response = self.client.get(reverse(self.URL))
+        self.assertTemplateUsed(response, 'core/partials/linear_form.html')
+
+    def test_all_columns_in_outcome_dropdown(self):
+        self._set_session_data()
+        response = self.client.get(reverse(self.URL))
+        for col in ['outcome', 'exposure', 'age']:
+            self.assertContains(response, col)
+
+    def test_exposure_checkboxes_present(self):
+        self._set_session_data()
+        response = self.client.get(reverse(self.URL))
+        self.assertContains(response, 'type="checkbox"')
+
+    def test_no_match_variable_dropdown(self):
+        """Linear regression form must NOT include a match variable option."""
+        self._set_session_data()
+        response = self.client.get(reverse(self.URL))
+        self.assertNotContains(response, 'match_variable')
+
+    def test_interaction_variables_checkboxes_present(self):
+        self._set_session_data()
+        response = self.client.get(reverse(self.URL))
+        self.assertContains(response, 'interaction_variables')
+
+    def test_columns_sorted_alphabetically_case_insensitive(self):
+        session = self.client.session
+        session['data'] = [{'Zebra': 1, 'apple': 1, 'Mango': 1, 'banana': 1}]
+        session.save()
+        response = self.client.get(reverse(self.URL))
+        content = response.content.decode()
+        positions = [content.index(col) for col in ['apple', 'banana', 'Mango', 'Zebra']]
+        self.assertEqual(positions, sorted(positions))
+
+    def test_form_posts_to_run_linear_url(self):
+        self._set_session_data()
+        response = self.client.get(reverse(self.URL))
+        self.assertContains(response, reverse('core:run_linear'))
+
+
+# ===========================================================================
+# RunLinearViewTests
+# ===========================================================================
+
+class RunLinearViewTests(TestCase):
+    """TDD tests for the run_linear view (calls epiinfo.LinearRegression)."""
+
+    URL = 'core:run_linear'
+
+    def _set_session_data(self):
+        session = self.client.session
+        session['data'] = SAMPLE_DATA
+        session.save()
+
+    def _run(self, outcome='outcome', exposures=None, interactions=None):
+        if exposures is None:
+            exposures = ['exposure']
+        data = {
+            'outcome_variable': outcome,
+            'exposure_variables': exposures,
+        }
+        if interactions:
+            data['interaction_variables'] = interactions
+        return self.client.post(reverse(self.URL), data)
+
+    def test_get_returns_405(self):
+        response = self.client.get(reverse(self.URL))
+        self.assertEqual(response.status_code, 405)
+
+    def test_requires_session_data(self):
+        response = self._run()
+        self.assertEqual(response.status_code, 400)
+
+    def test_missing_outcome_returns_400(self):
+        self._set_session_data()
+        response = self.client.post(
+            reverse(self.URL),
+            {'exposure_variables': ['exposure']},
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_missing_exposures_returns_400(self):
+        self._set_session_data()
+        response = self.client.post(
+            reverse(self.URL),
+            {'outcome_variable': 'outcome'},
+        )
+        self.assertEqual(response.status_code, 400)
+
+    @patch('core.views.LinearRegression')
+    def test_valid_run_returns_200(self, MockLR):
+        MockLR.return_value.doRegression.return_value = MOCK_LINEAR_RESULT
+        self._set_session_data()
+        response = self._run()
+        self.assertEqual(response.status_code, 200)
+
+    @patch('core.views.LinearRegression')
+    def test_valid_run_uses_results_template(self, MockLR):
+        MockLR.return_value.doRegression.return_value = MOCK_LINEAR_RESULT
+        self._set_session_data()
+        response = self._run()
+        self.assertTemplateUsed(response, 'core/partials/linear_results.html')
+
+    @patch('core.views.LinearRegression')
+    def test_results_contain_term_name(self, MockLR):
+        """Results must display the exposure variable name as a term."""
+        MockLR.return_value.doRegression.return_value = MOCK_LINEAR_RESULT
+        self._set_session_data()
+        response = self._run()
+        self.assertContains(response, 'exposure')
+
+    @patch('core.views.LinearRegression')
+    def test_results_contain_constant(self, MockLR):
+        """Results must display the CONSTANT term."""
+        MockLR.return_value.doRegression.return_value = MOCK_LINEAR_RESULT
+        self._set_session_data()
+        response = self._run()
+        self.assertContains(response, 'CONSTANT')
+
+    @patch('core.views.LinearRegression')
+    def test_results_contain_coefficient(self, MockLR):
+        """Results must display a coefficient value."""
+        MockLR.return_value.doRegression.return_value = MOCK_LINEAR_RESULT
+        self._set_session_data()
+        response = self._run()
+        self.assertContains(response, '5.8880')
+
+    @patch('core.views.LinearRegression')
+    def test_results_contain_r_squared(self, MockLR):
+        """Results must display the R² value."""
+        MockLR.return_value.doRegression.return_value = MOCK_LINEAR_RESULT
+        self._set_session_data()
+        response = self._run()
+        self.assertContains(response, '0.88')
+
+    @patch('core.views.LinearRegression')
+    def test_results_contain_anova_table(self, MockLR):
+        """Results must display ANOVA table headings."""
+        MockLR.return_value.doRegression.return_value = MOCK_LINEAR_RESULT
+        self._set_session_data()
+        response = self._run()
+        self.assertContains(response, 'Regression')
+        self.assertContains(response, 'Residuals')
+
+    @patch('core.views.LinearRegression')
+    def test_calls_doregression_with_dependvar(self, MockLR):
+        """doRegression() must be called with 'dependvar' key set to the outcome name."""
+        MockLR.return_value.doRegression.return_value = MOCK_LINEAR_RESULT
+        self._set_session_data()
+        self._run(outcome='outcome', exposures=['exposure'])
+        call_args = MockLR.return_value.doRegression.call_args
+        ivl = call_args[0][0]
+        self.assertEqual(ivl.get('dependvar'), 'outcome')
+        self.assertIn('exposure', ivl.get('exposureVariables', []))
+
+    @patch('core.views.LinearRegression')
+    def test_interaction_terms_added_to_exposure_variables(self, MockLR):
+        """Pairwise interaction terms must be appended to exposureVariables."""
+        MockLR.return_value.doRegression.return_value = MOCK_LINEAR_RESULT
+        self._set_session_data()
+        self._run(
+            outcome='outcome',
+            exposures=['exposure', 'age'],
+            interactions=['exposure', 'age'],
+        )
+        call_args = MockLR.return_value.doRegression.call_args
+        ivl = call_args[0][0]
+        self.assertIn('exposure*age', ivl.get('exposureVariables', []))
+
+
+# ===========================================================================
+# LinearRegressionIntegrationTests
+# ===========================================================================
+
+class LinearRegressionIntegrationTests(TestCase):
+    """
+    Integration test: loads BabyBloodPressure.json, runs LinearRegression
+    against the live epiinfo library, and asserts known values.
+
+    Reference values from sample_data/Salmonellosis.html:
+
+    Analysis 1 — SystolicBlood = AgeInDays + Birthweight (no interaction):
+      AgeInDays:   beta=5.888,  lcl=4.418,  ucl=7.357,  se=0.680,  f=74.9229,  p≈0 (< 0.0001)
+      Birthweight: beta=0.126,  lcl=0.051,  ucl=0.200,  se=0.034,  f=13.3770,  p=0.002896
+      CONSTANT:    beta=53.450, lcl=43.660, ucl=63.241, se=4.532,  f=139.1042, p≈0 (< 0.0001)
+      R²=0.88
+      ANOVA: Regression df=2, SS=591.036, MS=295.518, F=48.081
+             Residuals  df=13, SS=79.902,  MS=6.146
+             Total      df=15, SS=670.938
+
+    Analysis 2 — SystolicBlood = AgeInDays + Birthweight + AgeInDays*Birthweight:
+      AgeInDays:            beta=21.287,  p=0.005075
+      Birthweight:          beta=0.551,   p=0.008026
+      AgeInDays*Birthweight beta=-0.128,  p=0.028693
+      CONSTANT:             beta=2.552,   p=0.904570
+      R²=0.92
+      ANOVA: Regression df=3, SS=618.183, F=46.873
+             Residuals  df=12, SS=52.754
+    """
+
+    OUTCOME = 'SystolicBlood'
+    EXPOSURES = ['AgeInDays', 'Birthweight']
+    PLACES = 3
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        with open(BABY_BP_PATH) as f:
+            cls.data = json.load(f)
+
+    def _set_session(self):
+        session = self.client.session
+        session['data'] = self.data
+        session.save()
+
+    def _run(self, interactions=None):
+        self._set_session()
+        post_data = {
+            'outcome_variable': self.OUTCOME,
+            'exposure_variables': self.EXPOSURES,
+        }
+        if interactions:
+            post_data['interaction_variables'] = interactions
+        return self.client.post(reverse('core:run_linear'), post_data)
+
+    def _direct(self, exposures=None):
+        from epiinfo.LinearRegression import LinearRegression as EpiLR
+        exp = exposures or self.EXPOSURES
+        interaction_terms = [v for v in exp if '*' in v]
+        if interaction_terms:
+            data = []
+            for record in self.data:
+                row = dict(record)
+                for term in interaction_terms:
+                    a, b = term.split('*')
+                    try:
+                        row[term] = float(record[a]) * float(record[b])
+                    except (ValueError, TypeError, KeyError):
+                        row[term] = None
+                data.append(row)
+        else:
+            data = self.data
+        lr = EpiLR()
+        return lr.doRegression(
+            {'dependvar': self.OUTCOME, 'exposureVariables': exp},
+            data,
+        )
+
+    def _term(self, results, name):
+        return next(r for r in results if isinstance(r, dict) and r.get('variable') == name)
+
+    def _stats(self, results):
+        return next(r for r in results if isinstance(r, dict) and 'r2' in r)
+
+    # --- Analysis 1: no interaction ---
+
+    def test_baby_bp_data_loads(self):
+        """BabyBloodPressure.json must be a non-empty list of dicts with expected columns."""
+        self.assertIsInstance(self.data, list)
+        self.assertGreater(len(self.data), 0)
+        self.assertIn('SystolicBlood', self.data[0])
+        self.assertIn('AgeInDays', self.data[0])
+        self.assertIn('Birthweight', self.data[0])
+
+    def test_run_returns_200(self):
+        self.assertEqual(self._run().status_code, 200)
+
+    def test_ageindays_coefficient(self):
+        """AgeInDays beta must be 5.888."""
+        r = self._direct()
+        t = self._term(r, 'AgeInDays')
+        self.assertAlmostEqual(t['beta'], 5.888, places=self.PLACES)
+
+    def test_ageindays_confidence_limits(self):
+        """AgeInDays 95% CI must be [4.418, 7.357]."""
+        r = self._direct()
+        t = self._term(r, 'AgeInDays')
+        self.assertAlmostEqual(t['lcl'], 4.418, places=self.PLACES)
+        self.assertAlmostEqual(t['ucl'], 7.357, places=self.PLACES)
+
+    def test_ageindays_se_and_f(self):
+        """AgeInDays SE=0.680, F=74.923."""
+        r = self._direct()
+        t = self._term(r, 'AgeInDays')
+        self.assertAlmostEqual(t['stderror'], 0.680, places=self.PLACES)
+        self.assertAlmostEqual(t['ftest'], 74.923, places=self.PLACES)
+
+    def test_ageindays_p_value(self):
+        """AgeInDays p-value must be very small (< 0.0001)."""
+        r = self._direct()
+        t = self._term(r, 'AgeInDays')
+        self.assertLess(t['pvalue'], 0.0001)
+
+    def test_birthweight_coefficient(self):
+        """Birthweight beta must be 0.126."""
+        r = self._direct()
+        t = self._term(r, 'Birthweight')
+        self.assertAlmostEqual(t['beta'], 0.126, places=self.PLACES)
+
+    def test_birthweight_confidence_limits(self):
+        """Birthweight 95% CI must be [0.051, 0.200]."""
+        r = self._direct()
+        t = self._term(r, 'Birthweight')
+        self.assertAlmostEqual(t['lcl'], 0.051, places=self.PLACES)
+        self.assertAlmostEqual(t['ucl'], 0.200, places=self.PLACES)
+
+    def test_birthweight_se_and_f(self):
+        """Birthweight SE=0.034, F=13.377."""
+        r = self._direct()
+        t = self._term(r, 'Birthweight')
+        self.assertAlmostEqual(t['stderror'], 0.034, places=self.PLACES)
+        self.assertAlmostEqual(t['ftest'], 13.377, places=self.PLACES)
+
+    def test_birthweight_p_value(self):
+        """Birthweight p-value must be 0.002896 (±0.001)."""
+        r = self._direct()
+        t = self._term(r, 'Birthweight')
+        self.assertAlmostEqual(t['pvalue'], 0.002896, delta=0.001)
+
+    def test_constant_coefficient(self):
+        """CONSTANT beta must be 53.450."""
+        r = self._direct()
+        t = self._term(r, 'CONSTANT')
+        self.assertAlmostEqual(t['beta'], 53.450, places=self.PLACES)
+
+    def test_r_squared(self):
+        """R² must be 0.88."""
+        r = self._direct()
+        s = self._stats(r)
+        self.assertAlmostEqual(s['r2'], 0.88, places=2)
+
+    def test_anova_regression(self):
+        """ANOVA Regression: df=2, SS=591.036, MS=295.518, F=48.081."""
+        r = self._direct()
+        s = self._stats(r)
+        self.assertEqual(s['regressionDF'], 2)
+        self.assertAlmostEqual(s['sumOfSquares'], 591.036, places=self.PLACES)
+        self.assertAlmostEqual(s['meanSquare'], 295.518, places=self.PLACES)
+        self.assertAlmostEqual(s['fStatistic'], 48.081, places=self.PLACES)
+
+    def test_anova_residuals(self):
+        """ANOVA Residuals: df=13, SS=79.902, MS=6.146."""
+        r = self._direct()
+        s = self._stats(r)
+        self.assertEqual(s['residualsDF'], 13)
+        self.assertAlmostEqual(s['residualsSS'], 79.902, places=self.PLACES)
+        self.assertAlmostEqual(s['residualsMS'], 6.146, places=self.PLACES)
+
+    def test_anova_total(self):
+        """ANOVA Total: df=15, SS=670.938."""
+        r = self._direct()
+        s = self._stats(r)
+        self.assertEqual(s['totalDF'], 15)
+        self.assertAlmostEqual(s['totalSS'], 670.938, places=self.PLACES)
+
+    def test_results_page_shows_coefficients(self):
+        """Rendered page must show AgeInDays and Birthweight coefficients (4 dp)."""
+        response = self._run()
+        self.assertContains(response, '5.8877')   # AgeInDays beta (4 dp)
+        self.assertContains(response, '0.1256')   # Birthweight beta (4 dp)
+
+    def test_results_page_shows_r_squared(self):
+        """Rendered page must show R² = 0.88."""
+        response = self._run()
+        self.assertContains(response, '0.88')
+
+    def test_results_page_shows_anova_f(self):
+        """Rendered page must show overall F-statistic from ANOVA table."""
+        response = self._run()
+        self.assertContains(response, '48.08')
+
+    def test_results_page_shows_constant(self):
+        """Rendered page must show CONSTANT term with coefficient (4 dp)."""
+        response = self._run()
+        self.assertContains(response, 'CONSTANT')
+        self.assertContains(response, '53.4502')
+
+    # --- Analysis 2: with interaction ---
+
+    def test_interaction_run_returns_200(self):
+        self.assertEqual(
+            self._run(interactions=['AgeInDays', 'Birthweight']).status_code, 200
+        )
+
+    def test_interaction_ageindays_coefficient(self):
+        """With interaction, AgeInDays beta must be 21.287."""
+        r = self._direct(self.EXPOSURES + ['AgeInDays*Birthweight'])
+        t = self._term(r, 'AgeInDays')
+        self.assertAlmostEqual(t['beta'], 21.287, places=self.PLACES)
+
+    def test_interaction_birthweight_coefficient(self):
+        """With interaction, Birthweight beta must be 0.551."""
+        r = self._direct(self.EXPOSURES + ['AgeInDays*Birthweight'])
+        t = self._term(r, 'Birthweight')
+        self.assertAlmostEqual(t['beta'], 0.551, places=self.PLACES)
+
+    def test_interaction_term_coefficient(self):
+        """AgeInDays*Birthweight interaction term beta must be -0.128."""
+        r = self._direct(self.EXPOSURES + ['AgeInDays*Birthweight'])
+        t = self._term(r, 'AgeInDays*Birthweight')
+        self.assertAlmostEqual(t['beta'], -0.128, places=self.PLACES)
+
+    def test_interaction_r_squared(self):
+        """R² with interaction must be 0.92."""
+        r = self._direct(self.EXPOSURES + ['AgeInDays*Birthweight'])
+        s = self._stats(r)
+        self.assertAlmostEqual(s['r2'], 0.92, places=2)
+
+    def test_interaction_anova_regression(self):
+        """With interaction, ANOVA Regression: df=3, SS=618.183, F=46.873."""
+        r = self._direct(self.EXPOSURES + ['AgeInDays*Birthweight'])
+        s = self._stats(r)
+        self.assertEqual(s['regressionDF'], 3)
+        self.assertAlmostEqual(s['sumOfSquares'], 618.183, places=self.PLACES)
+        self.assertAlmostEqual(s['fStatistic'], 46.873, places=self.PLACES)
+
+    def test_interaction_anova_residuals(self):
+        """With interaction, ANOVA Residuals: df=12, SS=52.754."""
+        r = self._direct(self.EXPOSURES + ['AgeInDays*Birthweight'])
+        s = self._stats(r)
+        self.assertEqual(s['residualsDF'], 12)
+        self.assertAlmostEqual(s['residualsSS'], 52.754, places=self.PLACES)
+
+    def test_interaction_results_page_shows_interaction_coefficient(self):
+        """Rendered page with interaction must show AgeInDays*Birthweight term."""
+        response = self._run(interactions=['AgeInDays', 'Birthweight'])
+        self.assertContains(response, 'AgeInDays*Birthweight')
+        self.assertContains(response, '-0.128')
+
+    def test_interaction_results_page_shows_r_squared(self):
+        """Rendered page with interaction must show R² = 0.92."""
+        response = self._run(interactions=['AgeInDays', 'Birthweight'])
+        self.assertContains(response, '0.92')
