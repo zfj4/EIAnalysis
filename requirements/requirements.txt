@@ -35,3 +35,11 @@ Initial version (1.0) of the application shall meet the following requirements:
 * Executing Linear Regression Analysis shall run LinearRegression from the epiinfo package (https://github.com/Epi-Info/epiinfo) and present results in a format similar to that in the two linear regression analyses in sample_data\Salmonellosis.html.
 * Use BabyBloodPressure.json in sample_data to compute statistics to test against those in the two linear regression analyses in sample_data\Salmonellosis.html.
 
+1.1.3 Requirements:
+* Add Means Analysis to the list of available analyses.
+* Place it second on the list of analyses, between Tables Analysis and Linear Regression.
+* User shall be prompted to select a "Means of" variable and an optional "Cross-tabulate" variable.
+* Executing Means Analysis shall run Means.Run from the epiinfo package (https://github.com/Epi-Info/epiinfo) and present results in a format similar to that in sample_data\Means.html.
+* Use Oswego.json in sample_data to compute means of Age cross-tabulated by Ill and test the results against those in sample_data\Means.html.
+* If no Cross-tabulate variable is selected, only the top "Descriptive Statistics" table shall be displayed, with a single row of statistics for the entire dataset.
+* If a Cross-tabulate variable with more than two values is selected, the T-Test section of the output shall not be displayed.

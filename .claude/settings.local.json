@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"from epiinfo.Means import Means; help\\(Means\\)\")",
+      "Bash(python -c \":*)",
+      "Bash(python -c \"import inspect; from epiinfo.Means import Means; print\\(inspect.getsource\\(Means.Run\\)\\)\")",
+      "Bash(python manage.py test core --settings=eianalysis.test_settings)"
+    ]
+  }
+}

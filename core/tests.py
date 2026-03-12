@@ -454,6 +454,16 @@ class SummaryTableTests(TestCase):
 # ===========================================================================
 
 SAMPLE_DATA_PATH = Path(__file__).resolve().parent.parent / 'sample_data' / 'Salmonellosis.json'
+OSWEGO_DATA_PATH = Path(__file__).resolve().parent.parent / 'sample_data' / 'Oswego.json'
+
+
+def _load_oswego():
+    """Load Oswego.json, repairing the invalid JSON escape in the source file."""
+    with open(OSWEGO_DATA_PATH, 'rb') as f:
+        raw = f.read()
+    # The file contains 'CDC\zfj4' which is an invalid JSON escape sequence.
+    # Replace it with 'CDC_zfj4' so json.loads can parse the file.
+    return json.loads(raw.replace(rb'CDC\zfj4', b'CDC_zfj4'))
 
 
 class SalmonellosisIntegrationTests(TestCase):
@@ -1899,3 +1909,454 @@ class LinearRegressionIntegrationTests(TestCase):
         """Rendered page with interaction must show R² = 0.92."""
         response = self._run(interactions=['AgeInDays', 'Birthweight'])
         self.assertContains(response, '0.92')
+
+
+# ---------------------------------------------------------------------------
+# Shared mocks for Means.Run()
+# ---------------------------------------------------------------------------
+
+MOCK_MEANS_RESULT_CROSSTAB = [
+    {
+        'crosstabVariable': '0',
+        'obs': 29.0, 'total': 955.0, 'mean': 32.9310,
+        'variance': 423.7094, 'std_dev': 20.5842,
+        'min': 7.0, 'q25': 14.0, 'q50': 35.0, 'q75': 50.0, 'max': 69.0, 'mode': 11.0,
+    },
+    {
+        'crosstabVariable': '1',
+        'obs': 46.0, 'total': 1806.0, 'mean': 39.2609,
+        'variance': 477.2638, 'std_dev': 21.8464,
+        'min': 3.0, 'q25': 17.0, 'q50': 38.5, 'q75': 59.0, 'max': 77.0, 'mode': 15.0,
+    },
+    {
+        'meansDiffPooled': -6.3298, 'lclPooled': -16.4290, 'uclPooled': 3.7693,
+        'stdDevDiff': 21.3711, 'pooledT': -1.2491, 'pooledDF': 73, 'pooledPT': 0.2156,
+        'meansDiffSatterthwaite': -6.3298, 'lclSatterthwaite': -16.3198,
+        'uclSatterthwaite': 3.6601, 'SatterthwaiteT': -1.2663,
+        'SatterthwaiteDF': 62.33, 'SatterthwaitePT': 0.2101,
+    },
+    {
+        'ssBetween': 712.655, 'dfBetween': 1, 'msBetween': 712.655,
+        'fStatistic': 1.5604, 'ssWithin': 33340.732, 'dfWithin': 73.0,
+        'msWithin': 456.722, 'ssTotal': 34053.387, 'dfTotal': 74.0,
+        'anovaPValue': 0.2156, 'bartlettChiSquare': 0.1193, 'bartlettPValue': 0.7298,
+        'kruskalWallisH': 1.1612, 'kruskalWallisDF': 1, 'kruskalPValue': 0.2812,
+    },
+]
+
+MOCK_MEANS_RESULT_NO_CROSSTAB = [
+    {
+        'obs': 75.0, 'total': 2761.0, 'mean': 36.8133,
+        'variance': 460.1809, 'std_dev': 21.4518,
+        'min': 3.0, 'q25': 16.0, 'q50': 36.0, 'q75': 58.0, 'max': 77.0, 'mode': 11.0,
+    },
+]
+
+MOCK_MEANS_RESULT_THREE_GROUPS = [
+    {'crosstabVariable': 'A', 'obs': 10.0, 'total': 100.0, 'mean': 10.0,
+     'variance': 1.0, 'std_dev': 1.0, 'min': 5.0, 'q25': 8.0, 'q50': 10.0,
+     'q75': 12.0, 'max': 15.0, 'mode': 10.0},
+    {'crosstabVariable': 'B', 'obs': 10.0, 'total': 110.0, 'mean': 11.0,
+     'variance': 1.0, 'std_dev': 1.0, 'min': 6.0, 'q25': 9.0, 'q50': 11.0,
+     'q75': 13.0, 'max': 16.0, 'mode': 11.0},
+    {'crosstabVariable': 'C', 'obs': 10.0, 'total': 120.0, 'mean': 12.0,
+     'variance': 1.0, 'std_dev': 1.0, 'min': 7.0, 'q25': 10.0, 'q50': 12.0,
+     'q75': 14.0, 'max': 17.0, 'mode': 12.0},
+    # T-test placeholder (present in epiinfo output even for >2 groups)
+    {'meansDiffPooled': 0.0, 'lclPooled': 0.0, 'uclPooled': 0.0, 'stdDevDiff': 1.0,
+     'pooledT': 0.0, 'pooledDF': 27, 'pooledPT': 1.0,
+     'meansDiffSatterthwaite': 0.0, 'lclSatterthwaite': 0.0, 'uclSatterthwaite': 0.0,
+     'SatterthwaiteT': 0.0, 'SatterthwaiteDF': 18.0, 'SatterthwaitePT': 1.0},
+    {'ssBetween': 20.0, 'dfBetween': 2, 'msBetween': 10.0, 'fStatistic': 10.0,
+     'ssWithin': 27.0, 'dfWithin': 27.0, 'msWithin': 1.0,
+     'ssTotal': 47.0, 'dfTotal': 29.0, 'anovaPValue': 0.001,
+     'bartlettChiSquare': 0.0, 'bartlettPValue': 1.0,
+     'kruskalWallisH': 9.5, 'kruskalWallisDF': 2, 'kruskalPValue': 0.009},
+]
+
+
+# ===========================================================================
+# MeansFormViewTests
+# ===========================================================================
+
+class MeansFormViewTests(TestCase):
+    """TDD tests for the means analysis variable-selection form view."""
+
+    URL = 'core:means_form'
+
+    def _set_session_data(self):
+        session = self.client.session
+        session['data'] = SAMPLE_DATA
+        session['data_filename'] = 'sample.json'
+        session.save()
+
+    def test_requires_session_data(self):
+        """GET without loaded data must return 400."""
+        response = self.client.get(reverse(self.URL))
+        self.assertEqual(response.status_code, 400)
+
+    def test_returns_200_with_session_data(self):
+        """GET with data in session must return 200."""
+        self._set_session_data()
+        response = self.client.get(reverse(self.URL))
+        self.assertEqual(response.status_code, 200)
+
+    def test_uses_correct_template(self):
+        """Must render the means_form partial template."""
+        self._set_session_data()
+        response = self.client.get(reverse(self.URL))
+        self.assertTemplateUsed(response, 'core/partials/means_form.html')
+
+    def test_all_columns_in_means_dropdown(self):
+        """Every column name from the data must appear in the means-of select."""
+        self._set_session_data()
+        response = self.client.get(reverse(self.URL))
+        for col in ['outcome', 'exposure', 'age']:
+            self.assertContains(response, col)
+
+    def test_columns_sorted_alphabetically_case_insensitive(self):
+        """Columns must appear in case-insensitive alphabetical order."""
+        session = self.client.session
+        session['data'] = [{'Zebra': 1, 'apple': 1, 'Mango': 1, 'banana': 1}]
+        session.save()
+        response = self.client.get(reverse(self.URL))
+        content = response.content.decode()
+        positions = [content.index(col) for col in ['apple', 'banana', 'Mango', 'Zebra']]
+        self.assertEqual(positions, sorted(positions))
+
+    def test_crosstab_dropdown_present(self):
+        """Must include a cross-tabulate variable dropdown."""
+        self._set_session_data()
+        response = self.client.get(reverse(self.URL))
+        self.assertContains(response, 'crosstab_variable')
+
+    def test_form_posts_to_run_means_url(self):
+        """The form action must point to the run_means endpoint."""
+        self._set_session_data()
+        response = self.client.get(reverse(self.URL))
+        self.assertContains(response, reverse('core:run_means'))
+
+
+# ===========================================================================
+# RunMeansViewTests
+# ===========================================================================
+
+class RunMeansViewTests(TestCase):
+    """TDD tests for the run_means view (calls epiinfo.Means)."""
+
+    URL = 'core:run_means'
+
+    def _set_session_data(self):
+        session = self.client.session
+        session['data'] = SAMPLE_DATA
+        session.save()
+
+    def _run(self, means_var='age', crosstab_var=''):
+        return self.client.post(
+            reverse(self.URL),
+            {'means_variable': means_var, 'crosstab_variable': crosstab_var},
+        )
+
+    def test_get_returns_405(self):
+        response = self.client.get(reverse(self.URL))
+        self.assertEqual(response.status_code, 405)
+
+    def test_requires_session_data(self):
+        response = self._run()
+        self.assertEqual(response.status_code, 400)
+
+    def test_missing_means_variable_returns_400(self):
+        self._set_session_data()
+        response = self.client.post(reverse(self.URL), {'means_variable': '', 'crosstab_variable': ''})
+        self.assertEqual(response.status_code, 400)
+
+    @patch('core.views.Means')
+    def test_valid_run_returns_200(self, MockMeans):
+        MockMeans.return_value.Run.return_value = MOCK_MEANS_RESULT_NO_CROSSTAB
+        self._set_session_data()
+        response = self._run()
+        self.assertEqual(response.status_code, 200)
+
+    @patch('core.views.Means')
+    def test_valid_run_uses_results_template(self, MockMeans):
+        MockMeans.return_value.Run.return_value = MOCK_MEANS_RESULT_NO_CROSSTAB
+        self._set_session_data()
+        response = self._run()
+        self.assertTemplateUsed(response, 'core/partials/means_results.html')
+
+    @patch('core.views.Means')
+    def test_calls_run_with_mean_variable(self, MockMeans):
+        """Run() must be called with the correct meanVariable."""
+        MockMeans.return_value.Run.return_value = MOCK_MEANS_RESULT_NO_CROSSTAB
+        self._set_session_data()
+        self._run(means_var='age', crosstab_var='')
+        call_args = MockMeans.return_value.Run.call_args
+        cols = call_args[0][0]
+        self.assertEqual(cols.get('meanVariable'), 'age')
+        self.assertNotIn('crosstabVariable', cols)
+
+    @patch('core.views.Means')
+    def test_calls_run_with_crosstab_variable(self, MockMeans):
+        """Run() must include crosstabVariable when provided."""
+        MockMeans.return_value.Run.return_value = MOCK_MEANS_RESULT_CROSSTAB
+        self._set_session_data()
+        self._run(means_var='age', crosstab_var='outcome')
+        call_args = MockMeans.return_value.Run.call_args
+        cols = call_args[0][0]
+        self.assertEqual(cols.get('crosstabVariable'), 'outcome')
+
+    @patch('core.views.Means')
+    def test_results_contain_mean_value(self, MockMeans):
+        """Results must display the mean value from the stats dict."""
+        MockMeans.return_value.Run.return_value = MOCK_MEANS_RESULT_NO_CROSSTAB
+        self._set_session_data()
+        response = self._run()
+        self.assertContains(response, '36.8133')
+
+    @patch('core.views.Means')
+    def test_results_contain_table_element(self, MockMeans):
+        """Response HTML must contain a <table> element."""
+        MockMeans.return_value.Run.return_value = MOCK_MEANS_RESULT_NO_CROSSTAB
+        self._set_session_data()
+        response = self._run()
+        self.assertContains(response, '<table')
+
+    @patch('core.views.Means')
+    def test_no_crosstab_hides_anova(self, MockMeans):
+        """Without a crosstab variable, the ANOVA section must not appear."""
+        MockMeans.return_value.Run.return_value = MOCK_MEANS_RESULT_NO_CROSSTAB
+        self._set_session_data()
+        response = self._run()
+        self.assertNotContains(response, 'ANOVA')
+
+    @patch('core.views.Means')
+    def test_no_crosstab_hides_ttest(self, MockMeans):
+        """Without a crosstab variable, the T-Test section must not appear."""
+        MockMeans.return_value.Run.return_value = MOCK_MEANS_RESULT_NO_CROSSTAB
+        self._set_session_data()
+        response = self._run()
+        self.assertNotContains(response, 'T-Test')
+
+    @patch('core.views.Means')
+    def test_two_groups_shows_ttest(self, MockMeans):
+        """With two crosstab groups, the T-Test section must be displayed."""
+        MockMeans.return_value.Run.return_value = MOCK_MEANS_RESULT_CROSSTAB
+        self._set_session_data()
+        response = self._run(means_var='age', crosstab_var='outcome')
+        self.assertContains(response, 'T-Test')
+
+    @patch('core.views.Means')
+    def test_two_groups_shows_anova(self, MockMeans):
+        """With two crosstab groups, the ANOVA section must be displayed."""
+        MockMeans.return_value.Run.return_value = MOCK_MEANS_RESULT_CROSSTAB
+        self._set_session_data()
+        response = self._run(means_var='age', crosstab_var='outcome')
+        self.assertContains(response, 'ANOVA')
+
+    @patch('core.views.Means')
+    def test_three_groups_hides_ttest(self, MockMeans):
+        """With more than two crosstab groups, the T-Test section must be hidden."""
+        MockMeans.return_value.Run.return_value = MOCK_MEANS_RESULT_THREE_GROUPS
+        self._set_session_data()
+        response = self._run(means_var='age', crosstab_var='outcome')
+        self.assertNotContains(response, 'T-Test')
+
+    @patch('core.views.Means')
+    def test_three_groups_shows_anova(self, MockMeans):
+        """With more than two crosstab groups, ANOVA must still be displayed."""
+        MockMeans.return_value.Run.return_value = MOCK_MEANS_RESULT_THREE_GROUPS
+        self._set_session_data()
+        response = self._run(means_var='age', crosstab_var='outcome')
+        self.assertContains(response, 'ANOVA')
+
+    @patch('core.views.Means')
+    def test_crosstab_results_show_group_labels(self, MockMeans):
+        """Crosstab results must display each group label."""
+        MockMeans.return_value.Run.return_value = MOCK_MEANS_RESULT_CROSSTAB
+        self._set_session_data()
+        response = self._run(means_var='age', crosstab_var='outcome')
+        self.assertContains(response, '32.9310')   # group 0 mean
+        self.assertContains(response, '39.2609')   # group 1 mean
+
+    @patch('core.views.Means')
+    def test_ttest_pooled_values_displayed(self, MockMeans):
+        """T-Test pooled row must show mean diff and confidence limits."""
+        MockMeans.return_value.Run.return_value = MOCK_MEANS_RESULT_CROSSTAB
+        self._set_session_data()
+        response = self._run(means_var='age', crosstab_var='outcome')
+        self.assertContains(response, '-6.3298')
+        self.assertContains(response, '-16.4290')
+        self.assertContains(response, '3.7693')
+
+    @patch('core.views.Means')
+    def test_anova_f_statistic_displayed(self, MockMeans):
+        """ANOVA table must display F statistic."""
+        MockMeans.return_value.Run.return_value = MOCK_MEANS_RESULT_CROSSTAB
+        self._set_session_data()
+        response = self._run(means_var='age', crosstab_var='outcome')
+        self.assertContains(response, '1.5604')
+
+    @patch('core.views.Means')
+    def test_kruskal_wallis_displayed(self, MockMeans):
+        """Kruskal-Wallis H value must be displayed."""
+        MockMeans.return_value.Run.return_value = MOCK_MEANS_RESULT_CROSSTAB
+        self._set_session_data()
+        response = self._run(means_var='age', crosstab_var='outcome')
+        self.assertContains(response, '1.1612')
+
+
+# ===========================================================================
+# MeansIntegrationTests
+# ===========================================================================
+
+class MeansIntegrationTests(TestCase):
+    """
+    Integration test: loads Oswego.json, runs Means against the live epiinfo
+    library, and asserts known values from sample_data/Means.html.
+
+    Reference values (Age cross-tabulated by ILL):
+      Group 0 (ILL=0): obs=29,  mean=32.9310, std_dev=20.5842
+      Group 1 (ILL=1): obs=46,  mean=39.2609, std_dev=21.8464
+      T-Test pooled mean diff: -6.3298
+      ANOVA F-statistic: 1.5604
+      Kruskal-Wallis H: 1.1612
+    """
+
+    MEANS_VAR = 'AGE'
+    CROSSTAB_VAR = 'ILL'
+    PLACES = 4
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.data = _load_oswego()
+
+    def _set_session(self):
+        session = self.client.session
+        session['data'] = self.data
+        session.save()
+
+    def _direct(self, crosstab_var=None):
+        from epiinfo.Means import Means as EpiMeans
+        cols = {'meanVariable': self.MEANS_VAR}
+        if crosstab_var:
+            cols['crosstabVariable'] = crosstab_var
+        return EpiMeans().Run(cols, self.data)
+
+    def test_oswego_data_loads(self):
+        """Oswego.json must be a non-empty list of dicts."""
+        self.assertIsInstance(self.data, list)
+        self.assertGreater(len(self.data), 0)
+        self.assertIn('AGE', self.data[0])
+        self.assertIn('ILL', self.data[0])
+
+    def test_group0_obs(self):
+        """ILL=0 group must have 29 observations."""
+        r = self._direct(self.CROSSTAB_VAR)
+        self.assertAlmostEqual(r[0]['obs'], 29.0, places=self.PLACES)
+
+    def test_group1_obs(self):
+        """ILL=1 group must have 46 observations."""
+        r = self._direct(self.CROSSTAB_VAR)
+        self.assertAlmostEqual(r[1]['obs'], 46.0, places=self.PLACES)
+
+    def test_group0_mean(self):
+        """ILL=0 mean age must be 32.9310."""
+        r = self._direct(self.CROSSTAB_VAR)
+        self.assertAlmostEqual(r[0]['mean'], 32.9310, places=self.PLACES)
+
+    def test_group1_mean(self):
+        """ILL=1 mean age must be 39.2609."""
+        r = self._direct(self.CROSSTAB_VAR)
+        self.assertAlmostEqual(r[1]['mean'], 39.2609, places=self.PLACES)
+
+    def test_group0_std_dev(self):
+        """ILL=0 std dev must be 20.5842."""
+        r = self._direct(self.CROSSTAB_VAR)
+        self.assertAlmostEqual(r[0]['std_dev'], 20.5842, places=self.PLACES)
+
+    def test_group1_std_dev(self):
+        """ILL=1 std dev must be 21.8464."""
+        r = self._direct(self.CROSSTAB_VAR)
+        self.assertAlmostEqual(r[1]['std_dev'], 21.8464, places=self.PLACES)
+
+    def test_ttest_pooled_mean_diff(self):
+        """Pooled mean difference must be -6.3298."""
+        r = self._direct(self.CROSSTAB_VAR)
+        ttest = r[-2]
+        self.assertAlmostEqual(ttest['meansDiffPooled'], -6.3298, places=self.PLACES)
+
+    def test_ttest_pooled_lcl(self):
+        """Pooled 95% LCL must be -16.4290."""
+        r = self._direct(self.CROSSTAB_VAR)
+        ttest = r[-2]
+        self.assertAlmostEqual(ttest['lclPooled'], -16.4290, places=self.PLACES)
+
+    def test_anova_f_statistic(self):
+        """ANOVA F-statistic must be 1.5604."""
+        r = self._direct(self.CROSSTAB_VAR)
+        anova = r[-1]
+        self.assertAlmostEqual(anova['fStatistic'], 1.5604, places=self.PLACES)
+
+    def test_anova_p_value(self):
+        """ANOVA p-value must be 0.2156."""
+        r = self._direct(self.CROSSTAB_VAR)
+        anova = r[-1]
+        self.assertAlmostEqual(anova['anovaPValue'], 0.2156, places=self.PLACES)
+
+    def test_kruskal_wallis_h(self):
+        """Kruskal-Wallis H must be 1.1612."""
+        r = self._direct(self.CROSSTAB_VAR)
+        anova = r[-1]
+        self.assertAlmostEqual(anova['kruskalWallisH'], 1.1612, places=self.PLACES)
+
+    def test_bartlett_chi_square(self):
+        """Bartlett's chi square must be 0.1193."""
+        r = self._direct(self.CROSSTAB_VAR)
+        anova = r[-1]
+        self.assertAlmostEqual(anova['bartlettChiSquare'], 0.1193, places=self.PLACES)
+
+    def test_run_means_page_returns_200(self):
+        """run_means view must return HTTP 200 for Oswego inputs."""
+        self._set_session()
+        response = self.client.post(
+            reverse('core:run_means'),
+            {'means_variable': self.MEANS_VAR, 'crosstab_variable': self.CROSSTAB_VAR},
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_page_shows_group0_mean(self):
+        """Rendered page must display group 0 mean = 32.9310."""
+        self._set_session()
+        response = self.client.post(
+            reverse('core:run_means'),
+            {'means_variable': self.MEANS_VAR, 'crosstab_variable': self.CROSSTAB_VAR},
+        )
+        self.assertContains(response, '32.9310')
+
+    def test_page_shows_group1_mean(self):
+        """Rendered page must display group 1 mean = 39.2609."""
+        self._set_session()
+        response = self.client.post(
+            reverse('core:run_means'),
+            {'means_variable': self.MEANS_VAR, 'crosstab_variable': self.CROSSTAB_VAR},
+        )
+        self.assertContains(response, '39.2609')
+
+    def test_page_shows_anova_f(self):
+        """Rendered page must display ANOVA F = 1.5604."""
+        self._set_session()
+        response = self.client.post(
+            reverse('core:run_means'),
+            {'means_variable': self.MEANS_VAR, 'crosstab_variable': self.CROSSTAB_VAR},
+        )
+        self.assertContains(response, '1.5604')
+
+    def test_page_shows_kruskal_h(self):
+        """Rendered page must display Kruskal-Wallis H = 1.1612."""
+        self._set_session()
+        response = self.client.post(
+            reverse('core:run_means'),
+            {'means_variable': self.MEANS_VAR, 'crosstab_variable': self.CROSSTAB_VAR},
+        )
+        self.assertContains(response, '1.1612')

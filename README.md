@@ -252,6 +252,41 @@ To include an interaction term, check **`AgeInDays`** and **`Birthweight`** unde
 
 ---
 
+## 13 — Run Means Analysis
+
+This example uses the `Oswego.json` sample dataset included in the `sample_data` folder. Load it first (step 8), then:
+
+1. In the left sidebar, click **Means Analysis**
+2. In the **Means Of** dropdown, select **`AGE`**
+3. In the **Cross-tabulate** dropdown, select **`ILL`**
+4. Click **Run Analysis**
+
+Results will appear immediately, including:
+
+- **Descriptive Statistics** table: Obs, Total, Mean, Variance, and Std Dev for each value of the cross-tabulate variable
+- **Percentiles** table: Minimum, 25%, Median, 75%, Maximum, and Mode for each group
+- **T-Test**: Pooled and Satterthwaite mean differences, 95% confidence limits, t values, and p-values (shown only when there are exactly two groups)
+- **ANOVA**: Between/Within/Total SS, df, MS, and F-statistic with p-value
+- **Bartlett's Test** for inequality of variances
+- **Kruskal-Wallis** nonparametric test
+
+Expected values from the reference output:
+
+| Group (ILL) | Obs | Mean Age | Std Dev |
+|---|---|---|---|
+| 0 | 29 | 32.9310 | 20.5842 |
+| 1 | 46 | 39.2609 | 21.8464 |
+
+| Statistic | Value |
+|---|---|
+| T-Test pooled mean diff | −6.3298 (p=0.2156) |
+| ANOVA F (df=1) | 1.5604 (p=0.2156) |
+| Kruskal-Wallis H (df=1) | 1.1612 (p=0.2812) |
+
+If no Cross-tabulate variable is selected, only the Descriptive Statistics tables are displayed for the dataset as a whole.
+
+---
+
 ## Running the test suite
 
 ```

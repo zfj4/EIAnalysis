@@ -1,4 +1,5 @@
 import json
+import re
 from itertools import combinations
 
 from django.http import HttpResponseNotAllowed
@@ -6,6 +7,7 @@ from django.shortcuts import render
 from epiinfo.LinearRegression import LinearRegression
 from epiinfo.LogBinomialRegression import LogBinomialRegression
 from epiinfo.LogisticRegression import LogisticRegression
+from epiinfo.Means import Means
 from epiinfo.TablesAnalysis import TablesAnalysis
 
 
@@ -36,7 +38,11 @@ def upload_json(request):
         )
 
     try:
-        data = json.loads(raw.decode('utf-8'))
+        text = raw.decode('utf-8')
+        # Repair lone backslashes that aren't valid JSON escape sequences.
+        # Valid JSON escapes: \", \\, \/, \b, \f, \n, \r, \t, \uXXXX
+        text = re.sub(r'\\(?!["\\/bfnrtu])', r'\\\\', text)
+        data = json.loads(text)
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
         return render(
             request,
@@ -514,5 +520,75 @@ def run_logbinomial(request):
             'log_likelihood': results.LogLikelihood,
             'cases_included': results.CasesIncluded,
             'interaction_groups': interaction_groups,
+        },
+    )
+
+
+def means_form(request):
+    data = request.session.get('data')
+    if not data:
+        return render(
+            request,
+            'core/partials/upload_error.html',
+            {'error': 'No data loaded. Please upload a JSON file first.'},
+            status=400,
+        )
+
+    columns = sorted(data[0].keys(), key=str.casefold) if data else []
+    return render(request, 'core/partials/means_form.html', {'columns': columns})
+
+
+def run_means(request):
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    data = request.session.get('data')
+    if not data:
+        return render(
+            request,
+            'core/partials/upload_error.html',
+            {'error': 'No data loaded. Please upload a JSON file first.'},
+            status=400,
+        )
+
+    means_variable = request.POST.get('means_variable', '').strip()
+    crosstab_variable = request.POST.get('crosstab_variable', '').strip()
+
+    if not means_variable:
+        return render(
+            request,
+            'core/partials/upload_error.html',
+            {'error': 'Please select a Means Of variable.'},
+            status=400,
+        )
+
+    cols = {'meanVariable': means_variable}
+    if crosstab_variable:
+        cols['crosstabVariable'] = crosstab_variable
+
+    m = Means()
+    result = m.Run(cols, data)
+
+    if crosstab_variable:
+        anova = result[-1]
+        ttest = result[-2]
+        group_stats = result[:-2]
+        show_ttest = len(group_stats) == 2
+    else:
+        group_stats = result
+        ttest = None
+        anova = None
+        show_ttest = False
+
+    return render(
+        request,
+        'core/partials/means_results.html',
+        {
+            'means_variable': means_variable,
+            'crosstab_variable': crosstab_variable,
+            'group_stats': group_stats,
+            'ttest': ttest,
+            'anova': anova,
+            'show_ttest': show_ttest,
         },
     )
