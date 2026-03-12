@@ -91,6 +91,13 @@ class IndexViewTests(TestCase):
         self.assertContains(response, 'type="file"')
         self.assertContains(response, '.json')
 
+    def test_header_title_links_to_index(self):
+        """Clicking EIAnalysis in the header must navigate back to the index (file navigator)."""
+        response = self.client.get(reverse('core:index'))
+        index_url = reverse('core:index')
+        self.assertContains(response, f'hx-get="{index_url}"')
+        self.assertContains(response, 'EIAnalysis')
+
 
 # ===========================================================================
 # UploadJsonViewTests

@@ -43,3 +43,6 @@ Initial version (1.0) of the application shall meet the following requirements:
 * Use Oswego.json in sample_data to compute means of Age cross-tabulated by Ill and test the results against those in sample_data\Means.html.
 * If no Cross-tabulate variable is selected, only the top "Descriptive Statistics" table shall be displayed, with a single row of statistics for the entire dataset.
 * If a Cross-tabulate variable with more than two values is selected, the T-Test section of the output shall not be displayed.
+
+0.1.3.1 Requirements:
+* Clicking "EIAnalysis" in the header shall return the user to the initial screen where they can load a data file and select an analysis.
