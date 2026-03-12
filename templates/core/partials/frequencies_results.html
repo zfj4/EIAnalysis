@@ -1,0 +1,110 @@
+<div class="space-y-8">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <h2 class="text-xl font-semibold text-[#003B6F]">Frequencies Analysis Results</h2>
+    <button
+      hx-get="{% url 'core:frequencies_form' %}"
+      hx-target="#analysis-panel"
+      hx-swap="innerHTML show:#analysis-panel:top"
+      class="text-sm text-[#318CE7] hover:underline"
+    >
+      &#8592; Modify selections
+    </button>
+  </div>
+
+  <!-- Analysis spec -->
+  <div class="text-sm text-[#318CE7]">
+    <span class="font-medium">Frequencies Analysis</span>
+    &nbsp;|&nbsp;
+    {% for v in freq_variables %}
+      <span class="font-mono">{{ v }}</span>{% if not forloop.last %}, {% endif %}
+    {% endfor %}
+    {% if stratify_variable %}
+      &nbsp;stratified by&nbsp;<span class="font-mono">{{ stratify_variable }}</span>
+    {% endif %}
+    {% if weight_variable %}
+      &nbsp;weighted by&nbsp;<span class="font-mono">{{ weight_variable }}</span>
+    {% endif %}
+  </div>
+
+  {% for t in tables %}
+  <div class="bg-white border border-[#96BFE0] rounded-lg p-4 shadow-sm overflow-x-auto">
+
+    <!-- Table heading -->
+    <h4 class="text-xs font-semibold uppercase tracking-wider text-[#318CE7] mb-3">
+      {{ t.variable }}
+      {% if t.stratum %}
+        <span class="font-normal normal-case"> — {{ t.stratify_variable }} = </span>
+        <span class="font-mono text-[#003B6F]">{{ t.stratum }}</span>
+      {% endif %}
+      {% if t.weight_variable %}
+        <span class="font-normal normal-case"> &nbsp;(weighted by </span>
+        <span class="font-mono text-[#003B6F]">{{ t.weight_variable }}</span>
+        <span class="font-normal normal-case">)</span>
+      {% endif %}
+    </h4>
+
+    <!-- Frequency table -->
+    <table class="min-w-full text-sm mb-4">
+      <thead>
+        <tr class="border-b border-[#AECDE8]">
+          <th class="text-left py-2 pr-4 font-medium text-[#318CE7]">Value</th>
+          <th class="text-right py-2 px-3 font-medium text-[#318CE7]">Frequency</th>
+          <th class="text-right py-2 px-3 font-medium text-[#318CE7]">Percent</th>
+          <th class="text-right py-2 px-3 font-medium text-[#318CE7]">Cum. Percent</th>
+          <th class="py-2 px-3 w-28 font-medium text-[#318CE7]">&nbsp;</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-[#D6E8F5]">
+        {% for row in t.rows %}
+        <tr>
+          <td class="py-2 pr-4 font-medium text-[#003B6F]">{{ row.value }}</td>
+          <td class="py-2 px-3 text-right font-mono">{{ row.frequency|floatformat:0 }}</td>
+          <td class="py-2 px-3 text-right font-mono">{{ row.percent|floatformat:2 }}%</td>
+          <td class="py-2 px-3 text-right font-mono">{{ row.cum_percent|floatformat:2 }}%</td>
+          <td class="py-2 px-3">
+            <div class="h-2 rounded bg-[#AECDE8]" style="width: {{ row.percent|floatformat:0 }}%;">&nbsp;</div>
+          </td>
+        </tr>
+        {% endfor %}
+        <!-- Total row -->
+        <tr class="bg-[#EBF4FC] font-semibold">
+          <td class="py-2 pr-4 text-[#003B6F]">Total</td>
+          <td class="py-2 px-3 text-right font-mono">{{ t.total|floatformat:0 }}</td>
+          <td class="py-2 px-3 text-right font-mono">100.00%</td>
+          <td class="py-2 px-3 text-right font-mono">100.00%</td>
+          <td class="py-2 px-3">
+            <div class="h-2 rounded bg-[#96BFE0]" style="width:100%;">&nbsp;</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Confidence limits -->
+    <div class="mt-2">
+      <p class="text-xs font-semibold text-[#318CE7] mb-2">{{ t.ci_method }} 95% Conf Limits</p>
+      <table class="text-sm">
+        <thead>
+          <tr class="border-b border-[#AECDE8]">
+            <th class="text-left py-1 pr-6 font-medium text-[#318CE7]">Value</th>
+            <th class="text-right py-1 px-4 font-medium text-[#318CE7]">Lower</th>
+            <th class="text-right py-1 px-4 font-medium text-[#318CE7]">Upper</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[#D6E8F5]">
+          {% for row in t.rows %}
+          <tr>
+            <td class="py-1 pr-6 text-[#003B6F]">{{ row.value }}</td>
+            <td class="py-1 px-4 text-right font-mono">{{ row.lcl|floatformat:2 }}%</td>
+            <td class="py-1 px-4 text-right font-mono">{{ row.ucl|floatformat:2 }}%</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+  {% endfor %}
+
+</div>

@@ -46,3 +46,13 @@ Initial version (1.0) of the application shall meet the following requirements:
 
 0.1.3.1 Requirements:
 * Clicking "EIAnalysis" in the header shall return the user to the initial screen where they can load a data file and select an analysis.
+
+0.1.4 Requirements:
+* Add Frequencies Analysis to the list of available analyses.
+* Place it at the top of the list of analyses.
+* User shall be prompted to select one or more "Frequency of" variables, one optional "Stratify by" variable, and one optional "Weight" variable.
+* Executing Frequencies shall run Frequencies.Run from the epiinfo package (https://github.com/Epi-Info/epiinfo) and present results in a format similar to that in sample_data\Frequencies.html.
+* Arguments to Frequencies.Run are the dataset (list of dicts), and a list of "Frequency of" variables.
+* To set a Weight variable prior to Running, use Frequencies.weightVariable = 'weightvariable'.
+* You shall write the stratification functionality, as the Frequencies class does not contain it.
+* Use AgeWithCounts.json in sample_data (Frequency of Age; weightVariable='Count' to compute statistics to test against those in the weighted Frequency analysis in sample_data\Frequencies.html.

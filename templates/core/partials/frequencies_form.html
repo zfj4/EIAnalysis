@@ -1,0 +1,83 @@
+<div class="max-w-lg space-y-6">
+  <h2 class="text-xl font-semibold text-[#003B6F]">Frequencies Analysis</h2>
+
+  <form
+    hx-post="{% url 'core:run_frequencies' %}"
+    hx-target="#analysis-panel"
+    hx-swap="innerHTML show:#analysis-panel:top"
+    hx-indicator="#freq-spinner"
+    class="space-y-6"
+  >
+    {% csrf_token %}
+
+    <!-- Frequency Of (multi-select) -->
+    <div>
+      <label for="freq_variables" class="block text-sm font-medium text-[#003B6F] mb-1">
+        Frequency Of <span class="font-normal">(select one or more)</span>
+      </label>
+      <select
+        id="freq_variables"
+        name="freq_variables"
+        multiple
+        required
+        size="6"
+        class="block w-full rounded-md border border-[#AECDE8] bg-white px-3 py-2
+               text-sm shadow-sm focus:border-[#318CE7] focus:ring-1 focus:ring-[#318CE7]"
+      >
+        {% for col in columns %}
+        <option value="{{ col }}">{{ col }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Stratify By (optional) -->
+    <div>
+      <label for="stratify_variable" class="block text-sm font-medium text-[#003B6F] mb-1">
+        Stratify By <span class="font-normal">(optional)</span>
+      </label>
+      <select
+        id="stratify_variable"
+        name="stratify_variable"
+        class="block w-full rounded-md border border-[#AECDE8] bg-white px-3 py-2
+               text-sm shadow-sm focus:border-[#318CE7] focus:ring-1 focus:ring-[#318CE7]"
+      >
+        <option value="">— none —</option>
+        {% for col in columns %}
+        <option value="{{ col }}">{{ col }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Weight Variable (optional) -->
+    <div>
+      <label for="weight_variable" class="block text-sm font-medium text-[#003B6F] mb-1">
+        Weight Variable <span class="font-normal">(optional)</span>
+      </label>
+      <select
+        id="weight_variable"
+        name="weight_variable"
+        class="block w-full rounded-md border border-[#AECDE8] bg-white px-3 py-2
+               text-sm shadow-sm focus:border-[#318CE7] focus:ring-1 focus:ring-[#318CE7]"
+      >
+        <option value="">— none —</option>
+        {% for col in columns %}
+        <option value="{{ col }}">{{ col }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button
+      type="submit"
+      class="inline-flex items-center gap-2 px-5 py-2 bg-[#E0A07A] text-white
+             text-sm font-semibold rounded-md hover:bg-[#C07D55] transition-colors"
+    >
+      <span id="freq-spinner" class="htmx-indicator">
+        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+        </svg>
+      </span>
+      Run Analysis
+    </button>
+  </form>
+</div>

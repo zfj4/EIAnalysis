@@ -2367,3 +2367,285 @@ class MeansIntegrationTests(TestCase):
             {'means_variable': self.MEANS_VAR, 'crosstab_variable': self.CROSSTAB_VAR},
         )
         self.assertContains(response, '1.1612')
+
+
+
+# ===========================================================================
+# FrequenciesFormViewTests
+# ===========================================================================
+
+AGE_WITH_COUNT_PATH = Path(__file__).resolve().parent.parent / 'sample_data' / 'AgeWithCount.json'
+
+
+def _load_age_with_count():
+    with open(AGE_WITH_COUNT_PATH, 'rb') as f:
+        raw = f.read()
+    return json.loads(raw.replace(rb'CDC\zfj4', b'CDC_zfj4'))
+
+
+class FrequenciesFormViewTests(TestCase):
+    """TDD tests for the GET frequencies_form view."""
+
+    def _set_session(self):
+        session = self.client.session
+        session['data'] = SAMPLE_DATA
+        session.save()
+
+    def test_frequencies_form_returns_200(self):
+        """GET frequencies-form must return HTTP 200 when data is loaded."""
+        self._set_session()
+        response = self.client.get(reverse('core:frequencies_form'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_frequencies_form_uses_correct_template(self):
+        """GET frequencies-form must render frequencies_form.html partial."""
+        self._set_session()
+        response = self.client.get(reverse('core:frequencies_form'))
+        self.assertTemplateUsed(response, 'core/partials/frequencies_form.html')
+
+    def test_frequencies_form_contains_columns(self):
+        """Form must list all columns from the loaded dataset."""
+        self._set_session()
+        response = self.client.get(reverse('core:frequencies_form'))
+        for col in SAMPLE_DATA[0].keys():
+            self.assertContains(response, col)
+
+    def test_frequencies_form_contains_freq_variable_select(self):
+        """Form must contain a multi-select for frequency variables."""
+        self._set_session()
+        response = self.client.get(reverse('core:frequencies_form'))
+        self.assertContains(response, 'name="freq_variables"')
+
+    def test_frequencies_form_contains_stratify_select(self):
+        """Form must contain an optional stratify-by select."""
+        self._set_session()
+        response = self.client.get(reverse('core:frequencies_form'))
+        self.assertContains(response, 'name="stratify_variable"')
+
+    def test_frequencies_form_contains_weight_select(self):
+        """Form must contain an optional weight variable select."""
+        self._set_session()
+        response = self.client.get(reverse('core:frequencies_form'))
+        self.assertContains(response, 'name="weight_variable"')
+
+    def test_frequencies_form_without_data_returns_400(self):
+        """GET frequencies-form without loaded data must return HTTP 400."""
+        response = self.client.get(reverse('core:frequencies_form'))
+        self.assertEqual(response.status_code, 400)
+
+
+# ===========================================================================
+# RunFrequenciesViewTests
+# ===========================================================================
+
+class RunFrequenciesViewTests(TestCase):
+    """TDD tests for the POST run_frequencies view."""
+
+    def _set_session(self):
+        session = self.client.session
+        session['data'] = SAMPLE_DATA
+        session.save()
+
+    def test_run_frequencies_returns_200(self):
+        """POST run-frequencies must return HTTP 200."""
+        self._set_session()
+        response = self.client.post(
+            reverse('core:run_frequencies'),
+            {'freq_variables': ['exposure']},
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_run_frequencies_uses_results_template(self):
+        """POST run-frequencies must render frequencies_results.html."""
+        self._set_session()
+        response = self.client.post(
+            reverse('core:run_frequencies'),
+            {'freq_variables': ['exposure']},
+        )
+        self.assertTemplateUsed(response, 'core/partials/frequencies_results.html')
+
+    def test_run_frequencies_shows_variable_name(self):
+        """Results must display the selected frequency variable name."""
+        self._set_session()
+        response = self.client.post(
+            reverse('core:run_frequencies'),
+            {'freq_variables': ['exposure']},
+        )
+        self.assertContains(response, 'exposure')
+
+    def test_run_frequencies_shows_values(self):
+        """Results must display the distinct values of the frequency variable."""
+        self._set_session()
+        response = self.client.post(
+            reverse('core:run_frequencies'),
+            {'freq_variables': ['outcome']},
+        )
+        self.assertContains(response, 'Yes')
+        self.assertContains(response, 'No')
+
+    def test_run_frequencies_shows_total(self):
+        """Results must display the total row."""
+        self._set_session()
+        response = self.client.post(
+            reverse('core:run_frequencies'),
+            {'freq_variables': ['exposure']},
+        )
+        self.assertContains(response, 'Total')
+
+    def test_run_frequencies_shows_confidence_limits(self):
+        """Results must display a confidence limits section."""
+        self._set_session()
+        response = self.client.post(
+            reverse('core:run_frequencies'),
+            {'freq_variables': ['exposure']},
+        )
+        self.assertContains(response, 'Conf Limits')
+
+    def test_run_frequencies_without_data_returns_400(self):
+        """POST run-frequencies without loaded data must return HTTP 400."""
+        response = self.client.post(
+            reverse('core:run_frequencies'),
+            {'freq_variables': ['exposure']},
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_run_frequencies_without_variables_returns_400(self):
+        """POST run-frequencies without freq_variables must return HTTP 400."""
+        self._set_session()
+        response = self.client.post(reverse('core:run_frequencies'), {})
+        self.assertEqual(response.status_code, 400)
+
+    def test_run_frequencies_get_not_allowed(self):
+        """GET run-frequencies must return HTTP 405."""
+        self._set_session()
+        response = self.client.get(reverse('core:run_frequencies'))
+        self.assertEqual(response.status_code, 405)
+
+    def test_run_frequencies_stratify_shows_strata(self):
+        """Results with stratify variable must show each stratum label."""
+        self._set_session()
+        response = self.client.post(
+            reverse('core:run_frequencies'),
+            {'freq_variables': ['exposure'], 'stratify_variable': 'outcome'},
+        )
+        self.assertContains(response, 'Yes')
+        self.assertContains(response, 'No')
+
+    def test_run_frequencies_weight_variable_shown(self):
+        """Results with a weight variable must reference the weight variable name."""
+        self._set_session()
+        response = self.client.post(
+            reverse('core:run_frequencies'),
+            {'freq_variables': ['outcome'], 'weight_variable': 'age'},
+        )
+        self.assertContains(response, 'age')
+
+
+# ===========================================================================
+# FrequenciesIntegrationTests
+# ===========================================================================
+
+class FrequenciesIntegrationTests(TestCase):
+    """
+    Integration test: loads AgeWithCount.json, runs Frequencies with
+    weightVariable='Count', and asserts every value from
+    sample_data/Frequencies.html.
+
+    Reference table (Age; weightVariable=Count; total=85):
+      Age | Freq | Pct    | Cum%   | LCL   | UCL
+      ----+------+--------+--------+-------+-------
+       1  |   5  |  5.88  |  5.88  |  1.94 | 13.20
+       2  |  11  | 12.94  | 18.82  |  6.64 | 21.98
+       3  |  19  | 22.35  | 41.18  | 14.03 | 32.69
+       4  |  17  | 20.00  | 61.18  | 12.10 | 30.08
+       5  |  20  | 23.53  | 84.71  | 15.00 | 33.97
+       6  |   6  |  7.06  | 91.76  |  2.63 | 14.73
+       7  |   3  |  3.53  | 95.29  |  0.73 |  9.97
+       8  |   2  |  2.35  | 97.65  |  0.29 |  8.24
+       9  |   1  |  1.18  | 98.82  |  0.03 |  6.38
+      10  |   1  |  1.18  | 100.00 |  0.03 |  6.38
+    """
+
+    FREQ_VAR = 'Age'
+    WEIGHT_VAR = 'Count'
+
+    # (age, frequency, percent, cum_percent, lcl, ucl)
+    EXPECTED_ROWS = [
+        ('1',  5,   5.88,  5.88,   1.94, 13.20),
+        ('2',  11, 12.94, 18.82,   6.64, 21.98),
+        ('3',  19, 22.35, 41.18,  14.03, 32.69),
+        ('4',  17, 20.00, 61.18,  12.10, 30.08),
+        ('5',  20, 23.53, 84.71,  15.00, 33.97),
+        ('6',   6,  7.06, 91.76,   2.63, 14.73),
+        ('7',   3,  3.53, 95.29,   0.73,  9.97),
+        ('8',   2,  2.35, 97.65,   0.29,  8.24),
+        ('9',   1,  1.18, 98.82,   0.03,  6.38),
+        ('10',  1,  1.18, 100.00,  0.03,  6.38),
+    ]
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.data = _load_age_with_count()
+
+    def _set_session(self):
+        session = self.client.session
+        session['data'] = self.data
+        session.save()
+
+    def _run(self, **extra):
+        self._set_session()
+        return self.client.post(
+            reverse('core:run_frequencies'),
+            {'freq_variables': [self.FREQ_VAR], 'weight_variable': self.WEIGHT_VAR, **extra},
+        )
+
+    def test_total_is_85(self):
+        """Weighted total must equal 85."""
+        response = self._run()
+        self.assertContains(response, '85')
+
+    def test_exact_conf_limits_label(self):
+        """Results must show 'Exact 95% Conf Limits' (total=85 < 300)."""
+        response = self._run()
+        self.assertContains(response, 'Exact 95% Conf Limits')
+
+    def test_weight_variable_label_shown(self):
+        """Results must display the weight variable name."""
+        response = self._run()
+        self.assertContains(response, self.WEIGHT_VAR)
+
+    def test_all_frequencies(self):
+        """Every weighted frequency must match sample_data/Frequencies.html."""
+        response = self._run()
+        for age, freq, _pct, _cum, _lcl, _ucl in self.EXPECTED_ROWS:
+            with self.subTest(age=age):
+                self.assertContains(response, str(freq))
+
+    def test_all_percents(self):
+        """Every percent value must match sample_data/Frequencies.html."""
+        response = self._run()
+        for age, _freq, pct, _cum, _lcl, _ucl in self.EXPECTED_ROWS:
+            with self.subTest(age=age):
+                self.assertContains(response, f'{pct:.2f}')
+
+    def test_all_cumulative_percents(self):
+        """Every cumulative percent must match sample_data/Frequencies.html."""
+        response = self._run()
+        for age, _freq, _pct, cum, _lcl, _ucl in self.EXPECTED_ROWS:
+            with self.subTest(age=age):
+                self.assertContains(response, f'{cum:.2f}')
+
+    def test_all_lcls(self):
+        """Every exact 95% LCL must match sample_data/Frequencies.html."""
+        response = self._run()
+        for age, _freq, _pct, _cum, lcl, _ucl in self.EXPECTED_ROWS:
+            with self.subTest(age=age):
+                self.assertContains(response, f'{lcl:.2f}')
+
+    def test_all_ucls(self):
+        """Every exact 95% UCL must match sample_data/Frequencies.html."""
+        response = self._run()
+        for age, _freq, _pct, _cum, _lcl, ucl in self.EXPECTED_ROWS:
+            with self.subTest(age=age):
+                self.assertContains(response, f'{ucl:.2f}')

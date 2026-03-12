@@ -7,8 +7,42 @@ from django.shortcuts import render
 from epiinfo.LinearRegression import LinearRegression
 from epiinfo.LogBinomialRegression import LogBinomialRegression
 from epiinfo.LogisticRegression import LogisticRegression
+from epiinfo.Frequencies import Frequencies as FreqClass
 from epiinfo.Means import Means
 from epiinfo.TablesAnalysis import TablesAnalysis
+
+
+def _compute_frequency_table(data, variable, weight_variable=''):
+    """Return frequency rows and metadata for one variable/stratum."""
+    sorted_data = sorted(data, key=lambda d: d.get(variable, ''))
+    vals_and_freqs = {}
+    total = 0.0
+    for row in sorted_data:
+        if variable not in row:
+            continue
+        val = str(row[variable])
+        weight = float(row[weight_variable]) if weight_variable and weight_variable in row else 1.0
+        total += weight
+        vals_and_freqs[val] = vals_and_freqs.get(val, 0.0) + weight
+
+    freq_obj = FreqClass()
+    rows = []
+    cum_pct = 0.0
+    for val, freq in vals_and_freqs.items():
+        pct = (freq / total * 100) if total > 0 else 0.0
+        cum_pct += pct
+        cl = freq_obj.GetConfLimit(val, freq, total)
+        rows.append({
+            'value': val,
+            'frequency': freq,
+            'percent': pct,
+            'cum_percent': cum_pct,
+            'lcl': cl[1] * 100,
+            'ucl': cl[2] * 100,
+        })
+
+    ci_method = 'Exact' if total < 300 else 'Wilson'
+    return {'rows': rows, 'total': total, 'ci_method': ci_method}
 
 
 def index(request):
@@ -590,5 +624,75 @@ def run_means(request):
             'ttest': ttest,
             'anova': anova,
             'show_ttest': show_ttest,
+        },
+    )
+
+
+def frequencies_form(request):
+    data = request.session.get('data')
+    if not data:
+        return render(
+            request,
+            'core/partials/upload_error.html',
+            {'error': 'No data loaded. Please upload a JSON file first.'},
+            status=400,
+        )
+    columns = sorted(data[0].keys(), key=str.casefold) if data else []
+    return render(request, 'core/partials/frequencies_form.html', {'columns': columns})
+
+
+def run_frequencies(request):
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    data = request.session.get('data')
+    if not data:
+        return render(
+            request,
+            'core/partials/upload_error.html',
+            {'error': 'No data loaded. Please upload a JSON file first.'},
+            status=400,
+        )
+
+    freq_variables = request.POST.getlist('freq_variables')
+    stratify_variable = request.POST.get('stratify_variable', '').strip()
+    weight_variable = request.POST.get('weight_variable', '').strip()
+
+    if not freq_variables:
+        return render(
+            request,
+            'core/partials/upload_error.html',
+            {'error': 'Please select at least one Frequency Of variable.'},
+            status=400,
+        )
+
+    if stratify_variable:
+        strata_values = sorted(set(str(row.get(stratify_variable, '')) for row in data))
+        strata = [(sv, [r for r in data if str(r.get(stratify_variable, '')) == sv]) for sv in strata_values]
+    else:
+        strata = [('', data)]
+
+    tables = []
+    for stratum_label, stratum_data in strata:
+        for var in freq_variables:
+            result = _compute_frequency_table(stratum_data, var, weight_variable)
+            tables.append({
+                'variable': var,
+                'stratum': stratum_label,
+                'stratify_variable': stratify_variable,
+                'weight_variable': weight_variable,
+                'rows': result['rows'],
+                'total': result['total'],
+                'ci_method': result['ci_method'],
+            })
+
+    return render(
+        request,
+        'core/partials/frequencies_results.html',
+        {
+            'tables': tables,
+            'freq_variables': freq_variables,
+            'stratify_variable': stratify_variable,
+            'weight_variable': weight_variable,
         },
     )

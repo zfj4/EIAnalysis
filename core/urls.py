@@ -16,4 +16,6 @@ urlpatterns = [
     path('analysis/logistic-run/', views.run_logistic, name='run_logistic'),
     path('analysis/logbinomial-form/', views.logbinomial_form, name='logbinomial_form'),
     path('analysis/logbinomial-run/', views.run_logbinomial, name='run_logbinomial'),
+    path('analysis/frequencies-form/', views.frequencies_form, name='frequencies_form'),
+    path('analysis/frequencies-run/', views.run_frequencies, name='run_frequencies'),
 ]

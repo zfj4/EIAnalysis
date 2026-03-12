@@ -2,6 +2,16 @@
   <h2 class="text-xs font-semibold uppercase tracking-wider text-[#AECDE8] mb-3">Analyses</h2>
   <nav class="space-y-1">
     <button
+      hx-get="{% url 'core:frequencies_form' %}"
+      hx-target="#analysis-panel"
+      hx-swap="innerHTML"
+      class="w-full text-left px-3 py-2 rounded-md text-sm font-medium
+             text-[#BDD8F2] hover:bg-[#318CE7] hover:text-white
+             transition-colors focus:outline-none focus:ring-2 focus:ring-[#AECDE8]"
+    >
+      Frequencies Analysis
+    </button>
+    <button
       hx-get="{% url 'core:tables_form' %}"
       hx-target="#analysis-panel"
       hx-swap="innerHTML"
