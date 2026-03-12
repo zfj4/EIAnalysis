@@ -183,9 +183,17 @@ def run_analysis(request):
         col_totals = result['ColumnTotals'][i]
         stats = result['Statistics'][i]
 
+        # raw_table is indexed [exposure_idx][outcome_idx].
+        # RowTotals = totals per exposure (visual row totals).
+        # ColumnTotals = totals per outcome (visual column totals).
+        # Layout: exposure values down the left, outcome values across the top.
         rows = [
-            {'label': row_labels[j], 'cells': raw_table[j], 'total': row_totals[j]}
-            for j in range(len(row_labels))
+            {
+                'label': col_labels[j],  # exposure value
+                'cells': raw_table[j],   # counts indexed by outcome
+                'total': row_totals[j],  # total for this exposure row
+            }
+            for j in range(len(col_labels))
         ]
 
         grand_total = sum(row_totals)
@@ -193,9 +201,9 @@ def run_analysis(request):
 
         tables.append({
             'variable': variable,
-            'col_labels': col_labels,
+            'col_labels': row_labels,   # outcome values become column headers
             'rows': rows,
-            'col_totals': col_totals,
+            'col_totals': col_totals,   # ColumnTotals = per-outcome column totals
             'grand_total': grand_total,
             'stats': stats,
             'is_two_by_two': is_two_by_two,
