@@ -15,27 +15,27 @@ Initial version (1.0) of the application shall meet the following requirements:
 * http://127.0.0.1:8000/ is taken so this application shall use a different localhost URL.
 * The application shall be developed using Django and HTMX, with PostgreSQL as the database.
 
-1.1 Requirements:
+0.1 Requirements:
 * Add Logistic Regression Analysis to the list of available analyses.
 * Upon selection of Logistic Regression Analysis, the user shall be prompted to select one Outcome Variable and one or more Exposure Variables.
 * User shall have the option to select a Match Variable for matched case-control analysis.
 * User shall have the option to select two or more of the Exposure Variables as Interaction Variables.
 * Executing Logistic Regression Analysis shall run LogisticRegression from the epiinfo package (https://github.com/Epi-Info/epiinfo) and present results in formats similar to those in the two logistic regression analyses in sample_data\Salmonellosis.html.
 
-1.1.1 Requirements:
+0.1.1 Requirements:
 * Add Log-Binomial Regression Analysis to the list of available analyses.
 * Its user interface shall be nearly identical to that of Logistic Regression Analysis, except that it shall not have a Match Variable option.
 * Executing Log-Binomial Regression Analysis shall run LogBinomialRegression from the epiinfo package (https://github.com/Epi-Info/epiinfo) and present results in formats similar to those in the two log-binomial regression analyses in sample_data\Salmonellosis.html.
 * Include comparing all calculations to those in the two log-binomial regression analyses in sample_data\Salmonellosis.html as part of testing and validation.
 
-1.1.2 Requirements:
+0.1.2 Requirements:
 * Add Linear Regression Analysis to the list of available analyses.
 * Place it second on the list of analyses, between Tables Analysis and Logistic Regression.
 * Its user interface shall be identical to that of Log-Binomial Regression Analysis.
 * Executing Linear Regression Analysis shall run LinearRegression from the epiinfo package (https://github.com/Epi-Info/epiinfo) and present results in a format similar to that in the two linear regression analyses in sample_data\Salmonellosis.html.
 * Use BabyBloodPressure.json in sample_data to compute statistics to test against those in the two linear regression analyses in sample_data\Salmonellosis.html.
 
-1.1.3 Requirements:
+0.1.3 Requirements:
 * Add Means Analysis to the list of available analyses.
 * Place it second on the list of analyses, between Tables Analysis and Linear Regression.
 * User shall be prompted to select a "Means of" variable and an optional "Cross-tabulate" variable.
