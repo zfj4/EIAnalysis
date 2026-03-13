@@ -1,4 +1,36 @@
 <aside class="w-56 shrink-0 bg-[#003B6F] rounded-lg p-4">
+
+  <!-- Management section -->
+  <h2 class="text-xs font-semibold uppercase tracking-wider text-[#AECDE8] mb-3">Management</h2>
+  <nav class="space-y-1 mb-6">
+    <button
+      hx-get="{% url 'core:filter_form' %}"
+      hx-target="#analysis-panel"
+      hx-swap="innerHTML"
+      class="w-full text-left px-3 py-2 rounded-md text-sm font-medium
+             text-[#BDD8F2] hover:bg-[#318CE7] hover:text-white
+             transition-colors focus:outline-none focus:ring-2 focus:ring-[#AECDE8]"
+    >
+      Filter
+    </button>
+    <form
+      hx-post="{% url 'core:clear_filters' %}"
+      hx-target="#analysis-panel"
+      hx-swap="innerHTML show:#analysis-panel:top"
+    >
+      {% csrf_token %}
+      <button
+        type="submit"
+        class="w-full text-left px-3 py-2 rounded-md text-sm font-medium
+               text-[#BDD8F2] hover:bg-[#318CE7] hover:text-white
+               transition-colors focus:outline-none focus:ring-2 focus:ring-[#AECDE8]"
+      >
+        Clear Filters
+      </button>
+    </form>
+  </nav>
+
+  <!-- Analyses section -->
   <h2 class="text-xs font-semibold uppercase tracking-wider text-[#AECDE8] mb-3">Analyses</h2>
   <nav class="space-y-1">
     <button

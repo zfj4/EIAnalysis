@@ -56,3 +56,19 @@ Initial version (1.0) of the application shall meet the following requirements:
 * To set a Weight variable prior to Running, use Frequencies.weightVariable = 'weightvariable'.
 * You shall write the stratification functionality, as the Frequencies class does not contain it.
 * Use AgeWithCounts.json in sample_data (Frequency of Age; weightVariable='Count' to compute statistics to test against those in the weighted Frequency analysis in sample_data\Frequencies.html.
+
+0.2.0 Requirements:
+* Above the list of ANALYSES in the dark blue area on the left, add a MANAGEMENT section.
+* Start the MANAGEMENT list with "Filter".
+* Clicking "Filter" shall open the Filter Tool.
+* The Filter Tool shall allow the user to select one of the variables in the data object.
+* Upon selection of a variable, the Filter Tool shall present filtering options.
+* For all variables these options shall include: is missing, is not missing, is equal to, is not equal to.
+* If the selected variable is numeric, the user shall be given additional operator options: less than, less than or equal to, greater than or equal to, greater than.
+* For all variables, if a comparison operator is chosen, the user shall be given an input field for typing or selecting the comparison value.
+* For variables with five or fewer values, if "is equal to" or "is not equal to" is chosen, the user shall be given a list of possible values instead of an input field. Otherwise, the user shall be given an input text box for typing the comparison value.
+* The Filter Tool shall contain a "Filter" button.
+* After the Filter button is clicked, apply the filter to the working dataset and display the filter that has been applied, and count and re-display the number of rows in the filtered dataset.
+* Analyses shall then run on the filtered dataset.
+* Add "Clear Filters" below "Filter" in the MANAGEMENT list.
+* Clicking "Clear Filters" shall remove all filters and restore the full unfiltered dataset.

@@ -18,4 +18,9 @@ urlpatterns = [
     path('analysis/logbinomial-run/', views.run_logbinomial, name='run_logbinomial'),
     path('analysis/frequencies-form/', views.frequencies_form, name='frequencies_form'),
     path('analysis/frequencies-run/', views.run_frequencies, name='run_frequencies'),
+    path('management/filter-form/', views.filter_form, name='filter_form'),
+    path('management/filter-options/', views.filter_options, name='filter_options'),
+    path('management/filter-value-input/', views.filter_value_input, name='filter_value_input'),
+    path('management/filter-run/', views.run_filter, name='run_filter'),
+    path('management/filter-clear/', views.clear_filters, name='clear_filters'),
 ]

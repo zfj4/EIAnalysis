@@ -1,0 +1,36 @@
+{% if variable %}
+<div class="space-y-4">
+
+  <!-- Operator -->
+  <div>
+    <label for="filter-operator" class="block text-sm font-medium text-[#003B6F] mb-1">Condition</label>
+    <select
+      id="filter-operator"
+      name="operator"
+      required
+      hx-get="{% url 'core:filter_value_input' %}"
+      hx-target="#filter-value-area"
+      hx-trigger="change"
+      hx-include="[name='variable']"
+      class="block w-full rounded-md border border-[#AECDE8] bg-white px-3 py-2
+             text-sm shadow-sm focus:border-[#318CE7] focus:ring-1 focus:ring-[#318CE7]"
+    >
+      <option value="">— select —</option>
+      <option value="is_missing">is missing</option>
+      <option value="is_not_missing">is not missing</option>
+      <option value="eq">is equal to</option>
+      <option value="neq">is not equal to</option>
+      {% if is_numeric %}
+      <option value="lt">less than</option>
+      <option value="lte">less than or equal to</option>
+      <option value="gte">greater than or equal to</option>
+      <option value="gt">greater than</option>
+      {% endif %}
+    </select>
+  </div>
+
+  <!-- Value input loaded dynamically -->
+  <div id="filter-value-area"></div>
+
+</div>
+{% endif %}

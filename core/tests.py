@@ -2649,3 +2649,332 @@ class FrequenciesIntegrationTests(TestCase):
         for age, _freq, _pct, _cum, _lcl, ucl in self.EXPECTED_ROWS:
             with self.subTest(age=age):
                 self.assertContains(response, f'{ucl:.2f}')
+
+# ===========================================================================
+# Filter test data
+# ===========================================================================
+
+FILTER_DATA = [
+    {'name': 'Alice', 'age': '30', 'score': '90'},
+    {'name': 'Bob',   'age': '25', 'score': '85'},
+    {'name': 'Carol', 'age': '',   'score': '70'},
+    {'name': 'Dave',  'age': '40', 'score': '80'},
+    {'name': 'Eve',   'age': '30', 'score': '95'},
+    {'name': 'Frank', 'age': '35', 'score': '75'},
+]
+
+
+# ===========================================================================
+# FilterFormViewTests
+# ===========================================================================
+
+class FilterFormViewTests(TestCase):
+
+    URL = 'core:filter_form'
+
+    def _set_session(self, filters=None):
+        session = self.client.session
+        session['data'] = FILTER_DATA
+        session['original_data'] = FILTER_DATA
+        session['filters'] = filters or []
+        session.save()
+
+    def test_requires_session_data(self):
+        response = self.client.get(reverse(self.URL))
+        self.assertEqual(response.status_code, 400)
+
+    def test_returns_200_with_session_data(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL))
+        self.assertEqual(response.status_code, 200)
+
+    def test_uses_correct_template(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL))
+        self.assertTemplateUsed(response, 'core/partials/filter_form.html')
+
+    def test_columns_present(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL))
+        for col in ['name', 'age', 'score']:
+            self.assertContains(response, col)
+
+    def test_no_active_filters_shown_when_empty(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL))
+        self.assertNotContains(response, 'Active Filters')
+
+    def test_active_filters_shown(self):
+        self._set_session(filters=[{
+            'variable': 'age', 'operator': 'gt',
+            'operator_label': 'greater than', 'value': '25',
+        }])
+        response = self.client.get(reverse(self.URL))
+        self.assertContains(response, 'Active Filters')
+        self.assertContains(response, 'greater than')
+
+    def test_row_count_shown(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL))
+        self.assertContains(response, '6')
+
+
+# ===========================================================================
+# FilterOptionsViewTests
+# ===========================================================================
+
+class FilterOptionsViewTests(TestCase):
+
+    URL = 'core:filter_options'
+
+    def _set_session(self):
+        session = self.client.session
+        session['data'] = FILTER_DATA
+        session['original_data'] = FILTER_DATA
+        session['filters'] = []
+        session.save()
+
+    def test_returns_200(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'variable': 'age'})
+        self.assertEqual(response.status_code, 200)
+
+    def test_uses_correct_template(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'variable': 'age'})
+        self.assertTemplateUsed(response, 'core/partials/filter_options.html')
+
+    def test_numeric_variable_shows_numeric_operators(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'variable': 'age'})
+        self.assertContains(response, 'less than')
+        self.assertContains(response, 'greater than')
+
+    def test_non_numeric_variable_no_numeric_operators(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'variable': 'name'})
+        self.assertNotContains(response, 'less than')
+        self.assertNotContains(response, 'greater than')
+
+    def test_all_variables_get_base_operators(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'variable': 'name'})
+        self.assertContains(response, 'is missing')
+        self.assertContains(response, 'is not missing')
+        self.assertContains(response, 'is equal to')
+        self.assertContains(response, 'is not equal to')
+
+    def test_empty_variable_returns_empty_body(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'is missing')
+
+
+# ===========================================================================
+# FilterValueInputViewTests
+# ===========================================================================
+
+class FilterValueInputViewTests(TestCase):
+
+    URL = 'core:filter_value_input'
+
+    def _set_session(self):
+        session = self.client.session
+        session['data'] = FILTER_DATA
+        session['original_data'] = FILTER_DATA
+        session['filters'] = []
+        session.save()
+
+    def test_is_missing_returns_no_input(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'variable': 'age', 'operator': 'is_missing'})
+        self.assertNotContains(response, '<input')
+        self.assertNotContains(response, '<select')
+
+    def test_is_not_missing_returns_no_input(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'variable': 'age', 'operator': 'is_not_missing'})
+        self.assertNotContains(response, '<input')
+        self.assertNotContains(response, '<select')
+
+    def test_eq_few_values_returns_select(self):
+        # age has 4 distinct non-empty values - <=5 so select
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'variable': 'age', 'operator': 'eq'})
+        self.assertContains(response, '<select')
+
+    def test_neq_few_values_returns_select(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'variable': 'age', 'operator': 'neq'})
+        self.assertContains(response, '<select')
+
+    def test_eq_many_values_returns_text_input(self):
+        # name has 6 distinct values - >5 so text input
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'variable': 'name', 'operator': 'eq'})
+        self.assertContains(response, 'type="text"')
+        self.assertNotContains(response, '<select')
+
+    def test_lt_returns_text_input(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'variable': 'age', 'operator': 'lt'})
+        self.assertContains(response, 'type="text"')
+
+    def test_eq_select_contains_values(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'variable': 'age', 'operator': 'eq'})
+        self.assertContains(response, '25')
+        self.assertContains(response, '30')
+        self.assertContains(response, '40')
+
+
+# ===========================================================================
+# RunFilterViewTests
+# ===========================================================================
+
+class RunFilterViewTests(TestCase):
+
+    URL = 'core:run_filter'
+
+    def _set_session(self, data=None):
+        data = data or FILTER_DATA
+        session = self.client.session
+        session['data'] = list(data)
+        session['original_data'] = list(data)
+        session['filters'] = []
+        session.save()
+
+    def test_requires_post(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL))
+        self.assertEqual(response.status_code, 405)
+
+    def test_requires_session_data(self):
+        response = self.client.post(reverse(self.URL), {'variable': 'age', 'operator': 'eq', 'value': '30'})
+        self.assertEqual(response.status_code, 400)
+
+    def test_is_missing_filter(self):
+        self._set_session()
+        self.client.post(reverse(self.URL), {'variable': 'age', 'operator': 'is_missing'})
+        session = self.client.session
+        self.assertEqual(len(session['data']), 1)  # only Carol
+
+    def test_is_not_missing_filter(self):
+        self._set_session()
+        self.client.post(reverse(self.URL), {'variable': 'age', 'operator': 'is_not_missing'})
+        session = self.client.session
+        self.assertEqual(len(session['data']), 5)
+
+    def test_eq_filter(self):
+        self._set_session()
+        self.client.post(reverse(self.URL), {'variable': 'age', 'operator': 'eq', 'value': '30'})
+        session = self.client.session
+        self.assertEqual(len(session['data']), 2)  # Alice and Eve
+
+    def test_neq_filter_excludes_missing(self):
+        self._set_session()
+        self.client.post(reverse(self.URL), {'variable': 'age', 'operator': 'neq', 'value': '30'})
+        session = self.client.session
+        self.assertEqual(len(session['data']), 3)  # Bob, Dave, Frank
+
+    def test_lt_filter(self):
+        self._set_session()
+        self.client.post(reverse(self.URL), {'variable': 'age', 'operator': 'lt', 'value': '30'})
+        session = self.client.session
+        self.assertEqual(len(session['data']), 1)  # Bob(25)
+
+    def test_lte_filter(self):
+        self._set_session()
+        self.client.post(reverse(self.URL), {'variable': 'age', 'operator': 'lte', 'value': '30'})
+        session = self.client.session
+        self.assertEqual(len(session['data']), 3)  # Bob(25), Alice(30), Eve(30)
+
+    def test_gte_filter(self):
+        self._set_session()
+        self.client.post(reverse(self.URL), {'variable': 'age', 'operator': 'gte', 'value': '35'})
+        session = self.client.session
+        self.assertEqual(len(session['data']), 2)  # Dave(40), Frank(35)
+
+    def test_gt_filter(self):
+        self._set_session()
+        self.client.post(reverse(self.URL), {'variable': 'age', 'operator': 'gt', 'value': '30'})
+        session = self.client.session
+        self.assertEqual(len(session['data']), 2)  # Dave(40), Frank(35)
+
+    def test_filter_appends_to_session_filters(self):
+        self._set_session()
+        self.client.post(reverse(self.URL), {'variable': 'age', 'operator': 'gt', 'value': '25'})
+        session = self.client.session
+        self.assertEqual(len(session['filters']), 1)
+        self.assertEqual(session['filters'][0]['variable'], 'age')
+        self.assertEqual(session['filters'][0]['operator'], 'gt')
+
+    def test_filter_shows_operator_label_in_response(self):
+        self._set_session()
+        response = self.client.post(reverse(self.URL), {'variable': 'age', 'operator': 'gt', 'value': '25'})
+        self.assertContains(response, 'greater than')
+
+    def test_filter_shows_variable_in_response(self):
+        self._set_session()
+        response = self.client.post(reverse(self.URL), {'variable': 'age', 'operator': 'gt', 'value': '25'})
+        self.assertContains(response, 'age')
+
+    def test_multiple_filters_are_cumulative(self):
+        self._set_session()
+        # Filter 1: age >= 30 -> Alice(30), Dave(40), Eve(30), Frank(35) = 4 rows
+        self.client.post(reverse(self.URL), {'variable': 'age', 'operator': 'gte', 'value': '30'})
+        # Filter 2: age <= 35 -> Alice(30), Eve(30), Frank(35) = 3 rows
+        self.client.post(reverse(self.URL), {'variable': 'age', 'operator': 'lte', 'value': '35'})
+        session = self.client.session
+        self.assertEqual(len(session['data']), 3)
+        self.assertEqual(len(session['filters']), 2)
+
+
+# ===========================================================================
+# ClearFiltersViewTests
+# ===========================================================================
+
+class ClearFiltersViewTests(TestCase):
+
+    URL = 'core:clear_filters'
+
+    def _set_session(self):
+        session = self.client.session
+        session['data'] = FILTER_DATA[:3]  # simulate a filtered state
+        session['original_data'] = FILTER_DATA
+        session['filters'] = [
+            {'variable': 'age', 'operator': 'lt', 'operator_label': 'less than', 'value': '35'}
+        ]
+        session.save()
+
+    def test_requires_post(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL))
+        self.assertEqual(response.status_code, 405)
+
+    def test_requires_session_data(self):
+        response = self.client.post(reverse(self.URL))
+        self.assertEqual(response.status_code, 400)
+
+    def test_restores_original_data(self):
+        self._set_session()
+        self.client.post(reverse(self.URL))
+        session = self.client.session
+        self.assertEqual(len(session['data']), len(FILTER_DATA))
+
+    def test_clears_session_filters(self):
+        self._set_session()
+        self.client.post(reverse(self.URL))
+        session = self.client.session
+        self.assertEqual(session['filters'], [])
+
+    def test_shows_full_row_count_in_response(self):
+        self._set_session()
+        response = self.client.post(reverse(self.URL))
+        self.assertContains(response, str(len(FILTER_DATA)))
+
+    def test_response_shows_no_active_filters(self):
+        self._set_session()
+        response = self.client.post(reverse(self.URL))
+        self.assertNotContains(response, 'Active Filters')

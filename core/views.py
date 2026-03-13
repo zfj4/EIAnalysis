@@ -12,6 +12,80 @@ from epiinfo.Means import Means
 from epiinfo.TablesAnalysis import TablesAnalysis
 
 
+# ---------------------------------------------------------------------------
+# Filter helpers
+# ---------------------------------------------------------------------------
+
+OPERATOR_LABELS = {
+    'is_missing':     'is missing',
+    'is_not_missing': 'is not missing',
+    'eq':             'is equal to',
+    'neq':            'is not equal to',
+    'lt':             'less than',
+    'lte':            'less than or equal to',
+    'gte':            'greater than or equal to',
+    'gt':             'greater than',
+}
+
+
+def _is_numeric_variable(data, variable):
+    """Return True if all non-empty values of variable can be parsed as float."""
+    for row in data:
+        val = row.get(variable)
+        if val is None or val == '':
+            continue
+        try:
+            float(val)
+        except (ValueError, TypeError):
+            return False
+    return True
+
+
+def _unique_values(data, variable):
+    """Return sorted list of distinct non-empty string values for variable."""
+    return sorted(set(
+        str(row[variable])
+        for row in data
+        if variable in row and row[variable] is not None and row[variable] != ''
+    ))
+
+
+def _apply_single_filter(data, variable, operator, value):
+    """Apply one filter spec to data and return the matching rows."""
+    result = []
+    for row in data:
+        raw = row.get(variable)
+        is_missing = raw is None or raw == ''
+
+        if operator == 'is_missing':
+            if is_missing:
+                result.append(row)
+        elif operator == 'is_not_missing':
+            if not is_missing:
+                result.append(row)
+        elif operator == 'eq':
+            if not is_missing and str(raw) == value:
+                result.append(row)
+        elif operator == 'neq':
+            if not is_missing and str(raw) != value:
+                result.append(row)
+        elif operator in ('lt', 'lte', 'gte', 'gt'):
+            try:
+                row_val = float(raw)
+                cmp_val = float(value)
+                if operator == 'lt' and row_val < cmp_val:
+                    result.append(row)
+                elif operator == 'lte' and row_val <= cmp_val:
+                    result.append(row)
+                elif operator == 'gte' and row_val >= cmp_val:
+                    result.append(row)
+                elif operator == 'gt' and row_val > cmp_val:
+                    result.append(row)
+            except (ValueError, TypeError):
+                pass
+    return result
+
+
 def _compute_frequency_table(data, variable, weight_variable=''):
     """Return frequency rows and metadata for one variable/stratum."""
     sorted_data = sorted(data, key=lambda d: d.get(variable, ''))
@@ -102,6 +176,8 @@ def upload_json(request):
         )
 
     request.session['data'] = data
+    request.session['original_data'] = data
+    request.session['filters'] = []
     request.session['data_filename'] = uploaded_file.name
 
     columns = list(data[0].keys()) if data else []
@@ -704,3 +780,90 @@ def run_frequencies(request):
             'weight_variable': weight_variable,
         },
     )
+
+
+def filter_form(request):
+    data = request.session.get('data')
+    if not data:
+        return render(request, 'core/partials/upload_error.html',
+                      {'error': 'No data loaded. Please upload a JSON file first.'}, status=400)
+    columns = sorted(data[0].keys(), key=str.casefold)
+    filters = request.session.get('filters', [])
+    return render(request, 'core/partials/filter_form.html', {
+        'columns': columns,
+        'filters': filters,
+        'row_count': len(data),
+    })
+
+
+def filter_options(request):
+    variable = request.GET.get('variable', '')
+    data = request.session.get('data', [])
+    if not variable or not data:
+        return render(request, 'core/partials/filter_options.html', {})
+    is_numeric = _is_numeric_variable(data, variable)
+    return render(request, 'core/partials/filter_options.html', {
+        'variable': variable,
+        'is_numeric': is_numeric,
+    })
+
+
+def filter_value_input(request):
+    variable = request.GET.get('variable', '')
+    operator = request.GET.get('operator', '')
+    data = request.session.get('data', [])
+    if operator in ('is_missing', 'is_not_missing') or not variable:
+        return render(request, 'core/partials/filter_value_input.html', {'show_input': False})
+    unique_vals = _unique_values(data, variable)
+    use_select = operator in ('eq', 'neq') and len(unique_vals) <= 5
+    return render(request, 'core/partials/filter_value_input.html', {
+        'show_input': True,
+        'use_select': use_select,
+        'unique_vals': unique_vals if use_select else [],
+    })
+
+
+def run_filter(request):
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+    data = request.session.get('data')
+    if not data:
+        return render(request, 'core/partials/upload_error.html',
+                      {'error': 'No data loaded. Please upload a JSON file first.'}, status=400)
+    variable = request.POST.get('variable', '').strip()
+    operator = request.POST.get('operator', '').strip()
+    value = request.POST.get('value', '').strip()
+    if not variable or not operator:
+        return render(request, 'core/partials/upload_error.html',
+                      {'error': 'Please select a variable and operator.'}, status=400)
+    filtered = _apply_single_filter(data, variable, operator, value)
+    filters = request.session.get('filters', [])
+    filters.append({
+        'variable': variable,
+        'operator': operator,
+        'operator_label': OPERATOR_LABELS.get(operator, operator),
+        'value': value,
+    })
+    request.session['data'] = filtered
+    request.session['filters'] = filters
+    request.session.modified = True
+    return render(request, 'core/partials/filter_status.html', {
+        'filters': filters,
+        'row_count': len(filtered),
+    })
+
+
+def clear_filters(request):
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+    original = request.session.get('original_data')
+    if original is None:
+        return render(request, 'core/partials/upload_error.html',
+                      {'error': 'No data loaded. Please upload a JSON file first.'}, status=400)
+    request.session['data'] = original
+    request.session['filters'] = []
+    request.session.modified = True
+    return render(request, 'core/partials/filter_status.html', {
+        'filters': [],
+        'row_count': len(original),
+    })
