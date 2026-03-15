@@ -15,14 +15,22 @@
   </div>
 
   {% if filters %}
-  <div class="bg-white border border-[#96BFE0] rounded-lg p-4 shadow-sm space-y-2">
+  <div class="bg-white border border-[#96BFE0] rounded-lg p-4 shadow-sm space-y-3">
     <p class="text-xs font-semibold uppercase tracking-wider text-[#318CE7] mb-3">Active Filters</p>
-    {% for f in filters %}
-    <p class="text-sm text-[#003B6F]">
-      <span class="font-mono font-semibold">{{ f.variable }}</span>
-      <span> {{ f.operator_label }}</span>
-      {% if f.value %}<span class="font-mono"> {{ f.value }}</span>{% endif %}
-    </p>
+    {% for filter_def in filters %}
+    <div class="space-y-1">
+      {% for cond in filter_def %}
+      <p class="text-sm text-[#003B6F]">
+        {% if not forloop.first %}<span class="text-[#E0A07A] font-semibold">or </span>{% endif %}
+        <span class="font-mono font-semibold">{{ cond.variable }}</span>
+        <span> {{ cond.operator_label }}</span>
+        {% if cond.value %}<span class="font-mono"> {{ cond.value }}</span>{% endif %}
+      </p>
+      {% endfor %}
+    </div>
+    {% if not forloop.last %}
+    <p class="text-xs font-semibold text-[#318CE7] uppercase tracking-wider">and</p>
+    {% endif %}
     {% endfor %}
   </div>
   {% else %}

@@ -1,6 +1,6 @@
 import json
 import re
-from itertools import combinations
+from itertools import combinations, zip_longest
 
 from django.http import HttpResponseNotAllowed
 from django.shortcuts import render
@@ -50,40 +50,40 @@ def _unique_values(data, variable):
     ))
 
 
-def _apply_single_filter(data, variable, operator, value):
-    """Apply one filter spec to data and return the matching rows."""
-    result = []
-    for row in data:
-        raw = row.get(variable)
-        is_missing = raw is None or raw == ''
+def _row_matches_condition(row, variable, operator, value):
+    """Return True if the row satisfies a single filter condition."""
+    raw = row.get(variable)
+    is_missing = raw is None or raw == ''
+    if operator == 'is_missing':
+        return is_missing
+    if operator == 'is_not_missing':
+        return not is_missing
+    if operator == 'eq':
+        return not is_missing and str(raw) == value
+    if operator == 'neq':
+        return not is_missing and str(raw) != value
+    if operator in ('lt', 'lte', 'gte', 'gt'):
+        try:
+            row_val = float(raw)
+            cmp_val = float(value)
+            return (
+                (operator == 'lt'  and row_val <  cmp_val) or
+                (operator == 'lte' and row_val <= cmp_val) or
+                (operator == 'gte' and row_val >= cmp_val) or
+                (operator == 'gt'  and row_val >  cmp_val)
+            )
+        except (ValueError, TypeError):
+            return False
+    return False
 
-        if operator == 'is_missing':
-            if is_missing:
-                result.append(row)
-        elif operator == 'is_not_missing':
-            if not is_missing:
-                result.append(row)
-        elif operator == 'eq':
-            if not is_missing and str(raw) == value:
-                result.append(row)
-        elif operator == 'neq':
-            if not is_missing and str(raw) != value:
-                result.append(row)
-        elif operator in ('lt', 'lte', 'gte', 'gt'):
-            try:
-                row_val = float(raw)
-                cmp_val = float(value)
-                if operator == 'lt' and row_val < cmp_val:
-                    result.append(row)
-                elif operator == 'lte' and row_val <= cmp_val:
-                    result.append(row)
-                elif operator == 'gte' and row_val >= cmp_val:
-                    result.append(row)
-                elif operator == 'gt' and row_val > cmp_val:
-                    result.append(row)
-            except (ValueError, TypeError):
-                pass
-    return result
+
+def _apply_filter_definition(data, conditions):
+    """Keep rows that satisfy ANY condition in conditions (OR logic)."""
+    return [
+        row for row in data
+        if any(_row_matches_condition(row, c['variable'], c['operator'], c['value'])
+               for c in conditions)
+    ]
 
 
 def _compute_frequency_table(data, variable, weight_variable=''):
@@ -798,13 +798,15 @@ def filter_form(request):
 
 def filter_options(request):
     variable = request.GET.get('variable', '')
+    index = request.GET.get('index', '0')
     data = request.session.get('data', [])
     if not variable or not data:
-        return render(request, 'core/partials/filter_options.html', {})
+        return render(request, 'core/partials/filter_options.html', {'index': index})
     is_numeric = _is_numeric_variable(data, variable)
     return render(request, 'core/partials/filter_options.html', {
         'variable': variable,
         'is_numeric': is_numeric,
+        'index': index,
     })
 
 
@@ -830,20 +832,25 @@ def run_filter(request):
     if not data:
         return render(request, 'core/partials/upload_error.html',
                       {'error': 'No data loaded. Please upload a JSON file first.'}, status=400)
-    variable = request.POST.get('variable', '').strip()
-    operator = request.POST.get('operator', '').strip()
-    value = request.POST.get('value', '').strip()
-    if not variable or not operator:
+    variables = request.POST.getlist('variable')
+    operators = request.POST.getlist('operator')
+    values = request.POST.getlist('value')
+    conditions = []
+    for variable, operator, value in zip_longest(variables, operators, values, fillvalue=''):
+        variable, operator, value = variable.strip(), operator.strip(), value.strip()
+        if variable and operator:
+            conditions.append({
+                'variable': variable,
+                'operator': operator,
+                'operator_label': OPERATOR_LABELS.get(operator, operator),
+                'value': value,
+            })
+    if not conditions:
         return render(request, 'core/partials/upload_error.html',
                       {'error': 'Please select a variable and operator.'}, status=400)
-    filtered = _apply_single_filter(data, variable, operator, value)
+    filtered = _apply_filter_definition(data, conditions)
     filters = request.session.get('filters', [])
-    filters.append({
-        'variable': variable,
-        'operator': operator,
-        'operator_label': OPERATOR_LABELS.get(operator, operator),
-        'value': value,
-    })
+    filters.append(conditions)
     request.session['data'] = filtered
     request.session['filters'] = filters
     request.session.modified = True
@@ -866,4 +873,14 @@ def clear_filters(request):
     return render(request, 'core/partials/filter_status.html', {
         'filters': [],
         'row_count': len(original),
+    })
+
+
+def filter_condition_row(request):
+    data = request.session.get('data', [])
+    index = request.GET.get('index', '1')
+    columns = sorted(data[0].keys(), key=str.casefold) if data else []
+    return render(request, 'core/partials/filter_condition_row.html', {
+        'columns': columns,
+        'index': index,
     })

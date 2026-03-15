@@ -72,3 +72,10 @@ Initial version (1.0) of the application shall meet the following requirements:
 * Analyses shall then run on the filtered dataset.
 * Add "Clear Filters" below "Filter" in the MANAGEMENT list.
 * Clicking "Clear Filters" shall remove all filters and restore the full unfiltered dataset.
+
+0.2.0.2 Requirements:
+* Multiple Filter Definitions are correctly combined with AND.
+* Within each Filter Definition, add the functionality to add additional conditions.
+* Additional conditions shall be executed with ORs within a Filter Definition.
+* Place a button on the Filter Tool form that says "Additional Condition with Or".
+* When clicked, this button will add another set of inputs to the Filter Tool.

@@ -23,4 +23,5 @@ urlpatterns = [
     path('management/filter-value-input/', views.filter_value_input, name='filter_value_input'),
     path('management/filter-run/', views.run_filter, name='run_filter'),
     path('management/filter-clear/', views.clear_filters, name='clear_filters'),
+    path('management/filter-condition-row/', views.filter_condition_row, name='filter_condition_row'),
 ]

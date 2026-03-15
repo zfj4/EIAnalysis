@@ -1,9 +1,8 @@
 {% if show_input %}
 <div>
-  <label for="filter-value" class="block text-sm font-medium text-[#003B6F] mb-1">Value</label>
+  <label class="block text-sm font-medium text-[#003B6F] mb-1">Value</label>
   {% if use_select %}
   <select
-    id="filter-value"
     name="value"
     required
     class="block w-full rounded-md border border-[#AECDE8] bg-white px-3 py-2
@@ -15,7 +14,6 @@
   </select>
   {% else %}
   <input
-    id="filter-value"
     name="value"
     type="text"
     required
@@ -24,4 +22,6 @@
   >
   {% endif %}
 </div>
+{% else %}
+<input type="hidden" name="value" value="">
 {% endif %}

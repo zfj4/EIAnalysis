@@ -3,15 +3,15 @@
 
   <!-- Operator -->
   <div>
-    <label for="filter-operator" class="block text-sm font-medium text-[#003B6F] mb-1">Condition</label>
+    <label class="block text-sm font-medium text-[#003B6F] mb-1">Condition</label>
     <select
-      id="filter-operator"
       name="operator"
       required
       hx-get="{% url 'core:filter_value_input' %}"
-      hx-target="#filter-value-area"
+      hx-vals='{"index": "{{ index }}"}'
+      hx-target="#filter-value-area-{{ index }}"
       hx-trigger="change"
-      hx-include="[name='variable']"
+      hx-include="#condition-{{ index }} [name='variable']"
       class="block w-full rounded-md border border-[#AECDE8] bg-white px-3 py-2
              text-sm shadow-sm focus:border-[#318CE7] focus:ring-1 focus:ring-[#318CE7]"
     >
@@ -30,7 +30,7 @@
   </div>
 
   <!-- Value input loaded dynamically -->
-  <div id="filter-value-area"></div>
+  <div id="filter-value-area-{{ index }}"></div>
 
 </div>
 {% endif %}

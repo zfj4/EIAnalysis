@@ -2,14 +2,22 @@
   <h2 class="text-xl font-semibold text-[#003B6F]">Filter Data</h2>
 
   {% if filters %}
-  <div class="bg-[#BDD8F2] border border-[#AECDE8] rounded-lg p-4 space-y-2">
+  <div class="bg-[#BDD8F2] border border-[#AECDE8] rounded-lg p-4 space-y-3">
     <p class="text-xs font-semibold uppercase tracking-wider text-[#003B6F] mb-1">Active Filters</p>
-    {% for f in filters %}
-    <p class="text-sm text-[#003B6F]">
-      <span class="font-mono font-semibold">{{ f.variable }}</span>
-      <span> {{ f.operator_label }}</span>
-      {% if f.value %}<span class="font-mono"> {{ f.value }}</span>{% endif %}
-    </p>
+    {% for filter_def in filters %}
+    <div class="space-y-1">
+      {% for cond in filter_def %}
+      <p class="text-sm text-[#003B6F]">
+        {% if not forloop.first %}<span class="text-[#E0A07A] font-semibold">or </span>{% endif %}
+        <span class="font-mono font-semibold">{{ cond.variable }}</span>
+        <span> {{ cond.operator_label }}</span>
+        {% if cond.value %}<span class="font-mono"> {{ cond.value }}</span>{% endif %}
+      </p>
+      {% endfor %}
+    </div>
+    {% if not forloop.last %}
+    <p class="text-xs font-semibold text-[#318CE7] uppercase">and</p>
+    {% endif %}
     {% endfor %}
     <p class="text-sm font-medium text-[#318CE7]">{{ row_count }} rows in working dataset</p>
   </div>
@@ -24,28 +32,25 @@
   >
     {% csrf_token %}
 
-    <!-- Variable -->
-    <div>
-      <label for="filter-variable" class="block text-sm font-medium text-[#003B6F] mb-1">Variable</label>
-      <select
-        id="filter-variable"
-        name="variable"
-        required
-        hx-get="{% url 'core:filter_options' %}"
-        hx-target="#filter-dynamic"
-        hx-trigger="change"
-        class="block w-full rounded-md border border-[#AECDE8] bg-white px-3 py-2
-               text-sm shadow-sm focus:border-[#318CE7] focus:ring-1 focus:ring-[#318CE7]"
-      >
-        <option value="">— select —</option>
-        {% for col in columns %}
-        <option value="{{ col }}">{{ col }}</option>
-        {% endfor %}
-      </select>
+    <div id="condition-list" class="space-y-4">
+      {% with index="0" %}
+      {% include "core/partials/filter_condition_row.html" %}
+      {% endwith %}
     </div>
 
-    <!-- Operator + value loaded dynamically -->
-    <div id="filter-dynamic"></div>
+    <!-- Add OR condition -->
+    <button
+      type="button"
+      id="add-condition-btn"
+      hx-get="{% url 'core:filter_condition_row' %}"
+      hx-target="#condition-list"
+      hx-swap="beforeend"
+      hx-vals='{"index": "1"}'
+      hx-on:htmx:after-request="this.setAttribute('hx-vals', JSON.stringify({index: String(parseInt(JSON.parse(this.getAttribute('hx-vals')).index) + 1)}))"
+      class="text-sm text-[#318CE7] hover:underline"
+    >
+      + Add OR condition
+    </button>
 
     <button
       type="submit"
