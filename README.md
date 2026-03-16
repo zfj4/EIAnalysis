@@ -3,6 +3,8 @@ v0.1.3<br>
 
 A single-page epidemiological analysis application built with Django, HTMX, and Tailwind CSS.
 Load a JSON data file and run statistical analyses. Powered by the [epiinfo](https://github.com/Epi-Info/epiinfo) library.
+<br><br>
+The EIAnalysis application serves as an interface for the <a href="https://github.com/Epi-Info/epiinfo">epiinfo</a> Python package and provides much of the data management and analysis functionality as the <a href="https://github.com/Epi-Info/Epi-Info-Community-Edition">Epi Info 7</a> Analysis Dashboard.
 
 ---
 
