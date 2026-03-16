@@ -1,0 +1,28 @@
+<div class="space-y-6">
+
+  <div class="flex items-center justify-between">
+    <h2 class="text-xl font-semibold text-[#003B6F]">
+      Variable {% if is_new %}Created{% else %}Updated{% endif %}
+    </h2>
+    <button
+      hx-get="{% url 'core:addvar_form' %}"
+      hx-target="#analysis-panel"
+      hx-swap="innerHTML show:#analysis-panel:top"
+      class="text-sm text-[#318CE7] hover:underline"
+    >
+      &#8592; Add/Update another variable
+    </button>
+  </div>
+
+  <div class="bg-white border border-[#96BFE0] rounded-lg p-4 shadow-sm">
+    <p class="text-sm text-[#003B6F]">
+      Variable <span class="font-mono font-semibold">{{ variable_name }}</span>
+      has been {% if is_new %}created{% else %}updated{% endif %} successfully.
+    </p>
+  </div>
+
+  <div class="text-2xl font-semibold text-[#003B6F]">
+    {{ row_count }} <span class="text-base font-normal text-[#318CE7]">rows in working dataset</span>
+  </div>
+
+</div>

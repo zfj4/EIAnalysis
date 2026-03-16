@@ -28,6 +28,16 @@
         Clear Filters
       </button>
     </form>
+    <button
+      hx-get="{% url 'core:addvar_form' %}"
+      hx-target="#analysis-panel"
+      hx-swap="innerHTML"
+      class="w-full text-left px-3 py-2 rounded-md text-sm font-medium
+             text-[#BDD8F2] hover:bg-[#318CE7] hover:text-white
+             transition-colors focus:outline-none focus:ring-2 focus:ring-[#AECDE8]"
+    >
+      Add/Update Variable
+    </button>
   </nav>
 
   <!-- Analyses section -->

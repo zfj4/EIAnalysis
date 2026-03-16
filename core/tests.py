@@ -3097,3 +3097,396 @@ class RunFilterOrTests(TestCase):
             'value': ['25', '40'],
         })
         self.assertContains(response, 'or')
+
+
+# ===========================================================================
+# 0.3.0  Add/Update Variable — unit tests
+# ===========================================================================
+
+ADDVAR_DATA = [
+    {'name': 'Alice', 'dob': '1/1/1980 12:00:00 AM', 'age': None},
+    {'name': 'Bob',   'dob': '6/15/1990 12:00:00 AM', 'age': None},
+    {'name': 'Carol', 'dob': None,                     'age': None},
+    {'name': 'Dave',  'dob': 'bad-date',               'age': None},
+    {'name': 'Eve',   'dob': '3/3/2000 12:00:00 AM',  'age': 5},
+]
+
+ADDVAR_END_DATE = '05/05/2012'  # End date literal used in tests
+
+
+# ---------------------------------------------------------------------------
+# AddVarFormViewTests
+# ---------------------------------------------------------------------------
+
+class AddVarFormViewTests(TestCase):
+
+    URL = 'core:addvar_form'
+
+    def _set_session(self):
+        session = self.client.session
+        session['data'] = ADDVAR_DATA
+        session['original_data'] = ADDVAR_DATA
+        session['filters'] = []
+        session.save()
+
+    def test_get_without_data_returns_400(self):
+        response = self.client.get(reverse(self.URL))
+        self.assertEqual(response.status_code, 400)
+
+    def test_get_with_data_returns_200(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL))
+        self.assertEqual(response.status_code, 200)
+
+    def test_uses_correct_template(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL))
+        self.assertTemplateUsed(response, 'core/partials/addvar_form.html')
+
+    def test_contains_assignment_type_dropdown(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL))
+        self.assertContains(response, 'name="assignment_type"')
+
+    def test_contains_select_assignment_type_placeholder(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL))
+        self.assertContains(response, 'Select Assignment Type')
+
+    def test_contains_date_diff_option(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL))
+        self.assertContains(response, 'Difference between Two Dates')
+
+
+# ---------------------------------------------------------------------------
+# AddVarTypeViewTests
+# ---------------------------------------------------------------------------
+
+class AddVarTypeViewTests(TestCase):
+
+    URL = 'core:addvar_type'
+
+    def _set_session(self):
+        session = self.client.session
+        session['data'] = ADDVAR_DATA
+        session['original_data'] = ADDVAR_DATA
+        session['filters'] = []
+        session.save()
+
+    def test_date_diff_returns_200(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'assignment_type': 'date_diff'})
+        self.assertEqual(response.status_code, 200)
+
+    def test_date_diff_uses_correct_template(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'assignment_type': 'date_diff'})
+        self.assertTemplateUsed(response, 'core/partials/addvar_type_date_diff.html')
+
+    def test_date_diff_contains_days_radio(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'assignment_type': 'date_diff'})
+        self.assertContains(response, 'value="days"')
+
+    def test_date_diff_contains_months_radio(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'assignment_type': 'date_diff'})
+        self.assertContains(response, 'value="months"')
+
+    def test_date_diff_contains_years_radio(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'assignment_type': 'date_diff'})
+        self.assertContains(response, 'value="years"')
+
+    def test_date_diff_contains_start_date_variable_select(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'assignment_type': 'date_diff'})
+        self.assertContains(response, 'name="start_date_variable"')
+
+    def test_date_diff_contains_end_date_variable_select(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'assignment_type': 'date_diff'})
+        self.assertContains(response, 'name="end_date_variable"')
+
+    def test_date_diff_contains_start_date_literal_input(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'assignment_type': 'date_diff'})
+        self.assertContains(response, 'name="start_date_literal"')
+
+    def test_date_diff_contains_end_date_literal_input(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'assignment_type': 'date_diff'})
+        self.assertContains(response, 'name="end_date_literal"')
+
+    def test_date_diff_contains_column_names(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'assignment_type': 'date_diff'})
+        self.assertContains(response, 'dob')
+
+    def test_unknown_type_returns_empty_200(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'assignment_type': 'unknown'})
+        self.assertEqual(response.status_code, 200)
+
+
+# ---------------------------------------------------------------------------
+# RunAddVarViewTests
+# ---------------------------------------------------------------------------
+
+class RunAddVarViewTests(TestCase):
+
+    URL = 'core:run_addvar'
+
+    def _set_session(self, data=None):
+        session = self.client.session
+        session['data'] = data if data is not None else list(ADDVAR_DATA)
+        session['original_data'] = data if data is not None else list(ADDVAR_DATA)
+        session['filters'] = []
+        session.save()
+
+    def _post(self, **kwargs):
+        defaults = {
+            'assignment_type': 'date_diff',
+            'units': 'years',
+            'start_date_variable': 'dob',
+            'start_date_literal': '',
+            'end_date_variable': '',
+            'end_date_literal': ADDVAR_END_DATE,
+            'variable_name': 'age',
+        }
+        defaults.update(kwargs)
+        return self.client.post(reverse(self.URL), defaults)
+
+    # --- method guard ---
+
+    def test_get_returns_405(self):
+        response = self.client.get(reverse(self.URL))
+        self.assertEqual(response.status_code, 405)
+
+    # --- session guard ---
+
+    def test_requires_session_data(self):
+        response = self._post()
+        self.assertEqual(response.status_code, 400)
+
+    # --- input validation ---
+
+    def test_missing_assignment_type_returns_400(self):
+        self._set_session()
+        response = self._post(assignment_type='')
+        self.assertEqual(response.status_code, 400)
+
+    def test_missing_variable_name_returns_400(self):
+        self._set_session()
+        response = self._post(variable_name='')
+        self.assertEqual(response.status_code, 400)
+
+    def test_date_diff_missing_start_returns_400(self):
+        self._set_session()
+        response = self._post(start_date_variable='', start_date_literal='')
+        self.assertEqual(response.status_code, 400)
+
+    def test_date_diff_missing_end_returns_400(self):
+        self._set_session()
+        response = self._post(end_date_variable='', end_date_literal='')
+        self.assertEqual(response.status_code, 400)
+
+    # --- happy path ---
+
+    def test_valid_run_returns_200(self):
+        self._set_session()
+        response = self._post()
+        self.assertEqual(response.status_code, 200)
+
+    def test_valid_run_uses_status_template(self):
+        self._set_session()
+        response = self._post()
+        self.assertTemplateUsed(response, 'core/partials/addvar_status.html')
+
+    def test_creates_new_variable_in_session(self):
+        data = [{'name': 'Alice', 'dob': '1/1/1980 12:00:00 AM'}]
+        self._set_session(data)
+        self._post(start_date_variable='dob', variable_name='computed_age')
+        session = self.client.session
+        self.assertIn('computed_age', session['data'][0])
+
+    def test_updates_existing_variable(self):
+        data = [{'name': 'Alice', 'dob': '1/1/1980 12:00:00 AM', 'age': 99}]
+        self._set_session(data)
+        self._post(start_date_variable='dob', variable_name='age')
+        session = self.client.session
+        # Age should be updated from 99 to the computed value
+        self.assertNotEqual(session['data'][0]['age'], 99)
+
+    def test_years_calculation_is_correct(self):
+        # Alice born 1/1/1980, end 5/5/2012 -> 32 years
+        data = [{'name': 'Alice', 'dob': '1/1/1980 12:00:00 AM'}]
+        self._set_session(data)
+        self._post(units='years', start_date_variable='dob', variable_name='result')
+        session = self.client.session
+        self.assertEqual(session['data'][0]['result'], 32)
+
+    def test_months_calculation_is_correct(self):
+        # Alice born 1/1/1980, end 5/5/2012 -> 388 months (32*12 + 4)
+        data = [{'name': 'Alice', 'dob': '1/1/1980 12:00:00 AM'}]
+        self._set_session(data)
+        self._post(units='months', start_date_variable='dob', variable_name='result')
+        session = self.client.session
+        self.assertEqual(session['data'][0]['result'], 388)
+
+    def test_days_calculation_is_correct(self):
+        # Alice born 1/1/1980, end 5/5/2012
+        from datetime import date
+        start = date(1980, 1, 1)
+        end = date(2012, 5, 5)
+        expected = (end - start).days
+        data = [{'name': 'Alice', 'dob': '1/1/1980 12:00:00 AM'}]
+        self._set_session(data)
+        self._post(units='days', start_date_variable='dob', variable_name='result')
+        session = self.client.session
+        self.assertEqual(session['data'][0]['result'], expected)
+
+    def test_null_date_value_yields_null(self):
+        data = [{'name': 'Carol', 'dob': None}]
+        self._set_session(data)
+        self._post(start_date_variable='dob', variable_name='result')
+        session = self.client.session
+        self.assertIsNone(session['data'][0]['result'])
+
+    def test_invalid_date_value_yields_null(self):
+        data = [{'name': 'Dave', 'dob': 'not-a-date'}]
+        self._set_session(data)
+        self._post(start_date_variable='dob', variable_name='result')
+        session = self.client.session
+        self.assertIsNone(session['data'][0]['result'])
+
+    def test_time_stripped_from_date_values(self):
+        # 1/1/2020 11:00 and 1/2/2020 01:00 differ by 1 day not 0
+        data = [{'name': 'X', 'start': '1/1/2020 11:00:00 AM', 'end': '1/2/2020 1:00:00 AM'}]
+        self._set_session(data)
+        self._post(
+            units='days',
+            start_date_variable='start',
+            start_date_literal='',
+            end_date_variable='end',
+            end_date_literal='',
+            variable_name='diff',
+        )
+        session = self.client.session
+        self.assertEqual(session['data'][0]['diff'], 1)
+
+    def test_literal_end_date_applies_to_all_rows(self):
+        data = [
+            {'dob': '1/1/1980 12:00:00 AM'},
+            {'dob': '1/1/1990 12:00:00 AM'},
+        ]
+        self._set_session(data)
+        self._post(
+            units='years',
+            start_date_variable='dob',
+            start_date_literal='',
+            end_date_variable='',
+            end_date_literal='01/01/2000',
+            variable_name='result',
+        )
+        session = self.client.session
+        self.assertEqual(session['data'][0]['result'], 20)
+        self.assertEqual(session['data'][1]['result'], 10)
+
+    def test_literal_start_date_applies_to_all_rows(self):
+        data = [
+            {'end_date': '1/1/2010 12:00:00 AM'},
+            {'end_date': '1/1/2020 12:00:00 AM'},
+        ]
+        self._set_session(data)
+        self._post(
+            units='years',
+            start_date_variable='',
+            start_date_literal='01/01/2000',
+            end_date_variable='end_date',
+            end_date_literal='',
+            variable_name='result',
+        )
+        session = self.client.session
+        self.assertEqual(session['data'][0]['result'], 10)
+        self.assertEqual(session['data'][1]['result'], 20)
+
+    def test_result_is_rounded_down(self):
+        # Born 6/1/1980, end 5/5/2012 -> 31 years (not yet turned 32)
+        data = [{'dob': '6/1/1980 12:00:00 AM'}]
+        self._set_session(data)
+        self._post(units='years', start_date_variable='dob', variable_name='result')
+        session = self.client.session
+        self.assertEqual(session['data'][0]['result'], 31)
+
+    def test_response_shows_variable_name(self):
+        self._set_session()
+        response = self._post(variable_name='my_new_var')
+        self.assertContains(response, 'my_new_var')
+
+    def test_session_data_is_updated_in_place(self):
+        """Other variables in the dataset must remain unchanged."""
+        data = [{'name': 'Alice', 'dob': '1/1/1980 12:00:00 AM', 'score': 42}]
+        self._set_session(data)
+        self._post(start_date_variable='dob', variable_name='age')
+        session = self.client.session
+        self.assertEqual(session['data'][0]['name'], 'Alice')
+        self.assertEqual(session['data'][0]['score'], 42)
+
+
+# ===========================================================================
+# 0.3.0  Add/Update Variable — Salmonellosis integration test
+# ===========================================================================
+
+class DateDiffIntegrationTests(TestCase):
+    """
+    Integration test: loads Salmonellosis.json, runs date diff (DOB → Age,
+    end date 05/05/2012, units=years) and verifies against known Age values.
+
+    Only 10 rows have a non-null Age; those 10 should match after the update.
+    """
+
+    KNOWN = {
+        170: 30,
+        178: 41,
+        181: 19,
+        189: 40,
+        219: 44,
+        222: 22,
+        234: 57,
+        252: 36,
+        255: 40,
+        295: 32,
+    }
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        with open(SAMPLE_DATA_PATH) as f:
+            cls.original_data = json.load(f)
+
+    def _set_session(self):
+        session = self.client.session
+        session['data'] = list(self.original_data)
+        session['original_data'] = list(self.original_data)
+        session['filters'] = []
+        session.save()
+
+    def test_date_diff_matches_known_age_values(self):
+        """For the 10 rows with known Age, computed age must match."""
+        self._set_session()
+        self.client.post(reverse('core:run_addvar'), {
+            'assignment_type': 'date_diff',
+            'units': 'years',
+            'start_date_variable': 'DOB',
+            'start_date_literal': '',
+            'end_date_variable': '',
+            'end_date_literal': '05/05/2012',
+            'variable_name': 'Age',
+        })
+        session = self.client.session
+        data = session['data']
+        for idx, expected_age in self.KNOWN.items():
+            with self.subTest(row=idx):
+                self.assertEqual(data[idx]['Age'], expected_age)

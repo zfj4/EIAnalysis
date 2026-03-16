@@ -1,5 +1,7 @@
 import json
+import math
 import re
+from datetime import datetime
 from itertools import combinations, zip_longest
 
 from django.http import HttpResponseNotAllowed
@@ -893,3 +895,141 @@ def filter_condition_row(request):
         'columns': columns,
         'index': index,
     })
+
+
+# ---------------------------------------------------------------------------
+# Add/Update Variable helpers
+# ---------------------------------------------------------------------------
+
+_DATE_FORMATS = [
+    '%m/%d/%Y',
+    '%Y-%m-%d',
+    '%m/%d/%Y %I:%M:%S %p',
+    '%m/%d/%Y %H:%M:%S',
+    '%Y-%m-%dT%H:%M:%S',
+    '%-m/%-d/%Y',           # Linux only; kept as fallback
+]
+
+
+def _parse_date(value):
+    """Parse a date string, stripping any time component. Returns date or None."""
+    if value is None or value == '':
+        return None
+    s = str(value).strip()
+    # Try stripping time by taking only the date part (before first space)
+    date_part = s.split(' ')[0]
+    for fmt in ('%m/%d/%Y', '%Y-%m-%d', '%-m/%-d/%Y'):
+        try:
+            return datetime.strptime(date_part, fmt).date()
+        except ValueError:
+            pass
+    # Try full string with various formats
+    for fmt in _DATE_FORMATS:
+        try:
+            return datetime.strptime(s, fmt).date()
+        except ValueError:
+            pass
+    return None
+
+
+def _date_diff(start_date, end_date, unit):
+    """Return integer difference between two date objects in the given unit."""
+    if start_date is None or end_date is None:
+        return None
+    if unit == 'days':
+        return (end_date - start_date).days
+    if unit == 'months':
+        months = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month)
+        if end_date.day < start_date.day:
+            months -= 1
+        return months
+    if unit == 'years':
+        years = end_date.year - start_date.year
+        if (end_date.month, end_date.day) < (start_date.month, start_date.day):
+            years -= 1
+        return years
+    return None
+
+
+def addvar_form(request):
+    data = request.session.get('data')
+    if not data:
+        return render(request, 'core/partials/upload_error.html',
+                      {'error': 'No data loaded. Please upload a JSON file first.'}, status=400)
+    columns = sorted(data[0].keys(), key=str.casefold)
+    return render(request, 'core/partials/addvar_form.html', {'columns': columns})
+
+
+def addvar_type(request):
+    assignment_type = request.GET.get('assignment_type', '')
+    data = request.session.get('data', [])
+    columns = sorted(data[0].keys(), key=str.casefold) if data else []
+    if assignment_type == 'date_diff':
+        return render(request, 'core/partials/addvar_type_date_diff.html', {'columns': columns})
+    return render(request, 'core/partials/addvar_type_empty.html', {})
+
+
+def run_addvar(request):
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+    data = request.session.get('data')
+    if not data:
+        return render(request, 'core/partials/upload_error.html',
+                      {'error': 'No data loaded. Please upload a JSON file first.'}, status=400)
+
+    assignment_type = request.POST.get('assignment_type', '').strip()
+    variable_name = request.POST.get('variable_name', '').strip()
+
+    if not assignment_type:
+        return render(request, 'core/partials/upload_error.html',
+                      {'error': 'Please select an Assignment Type.'}, status=400)
+    if not variable_name:
+        return render(request, 'core/partials/upload_error.html',
+                      {'error': 'Please enter a variable name.'}, status=400)
+
+    if assignment_type == 'date_diff':
+        units = request.POST.get('units', 'days').strip()
+        start_var = request.POST.get('start_date_variable', '').strip()
+        start_lit = request.POST.get('start_date_literal', '').strip()
+        end_var = request.POST.get('end_date_variable', '').strip()
+        end_lit = request.POST.get('end_date_literal', '').strip()
+
+        if not start_var and not start_lit:
+            return render(request, 'core/partials/upload_error.html',
+                          {'error': 'Please specify a Start Date variable or literal value.'}, status=400)
+        if not end_var and not end_lit:
+            return render(request, 'core/partials/upload_error.html',
+                          {'error': 'Please specify an End Date variable or literal value.'}, status=400)
+
+        # Pre-parse literal dates (same for every row)
+        start_literal_date = _parse_date(start_lit) if start_lit else None
+        end_literal_date = _parse_date(end_lit) if end_lit else None
+
+        updated_data = []
+        for row in data:
+            new_row = dict(row)
+            if start_lit:
+                start_date = start_literal_date
+            else:
+                start_date = _parse_date(row.get(start_var))
+
+            if end_lit:
+                end_date = end_literal_date
+            else:
+                end_date = _parse_date(row.get(end_var))
+
+            new_row[variable_name] = _date_diff(start_date, end_date, units)
+            updated_data.append(new_row)
+
+        request.session['data'] = updated_data
+        request.session.modified = True
+
+        is_new = variable_name not in (data[0].keys() if data else [])
+        return render(request, 'core/partials/addvar_status.html', {
+            'variable_name': variable_name,
+            'is_new': is_new,
+            'row_count': len(updated_data),
+        })
+
+    return render(request, 'core/partials/upload_error.html',
+                  {'error': f'Unknown assignment type: {assignment_type}'}, status=400)

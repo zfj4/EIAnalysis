@@ -24,4 +24,7 @@ urlpatterns = [
     path('management/filter-run/', views.run_filter, name='run_filter'),
     path('management/filter-clear/', views.clear_filters, name='clear_filters'),
     path('management/filter-condition-row/', views.filter_condition_row, name='filter_condition_row'),
+    path('management/addvar-form/', views.addvar_form, name='addvar_form'),
+    path('management/addvar-type/', views.addvar_type, name='addvar_type'),
+    path('management/addvar-run/', views.run_addvar, name='run_addvar'),
 ]

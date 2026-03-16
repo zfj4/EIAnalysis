@@ -79,3 +79,21 @@ Initial version (1.0) of the application shall meet the following requirements:
 * Additional conditions shall be executed with ORs within a Filter Definition.
 * Place a button on the Filter Tool form that says "Additional Condition with Or".
 * When clicked, this button will add another set of inputs to the Filter Tool.
+
+0.3.0 Requirements:
+* In the MANAGAMENT section, below "Clear Filters", add "Add/Update Variable".
+* Clicking "Add/Update Variable" shall open the Add/Update Variable Tool.
+* The Add/Update Variable Tool shall begin with a dropdown of assignment types.
+* Label the dropdown "Assignment Type".
+* The first row of the dropdown shall be "-- Select Assignment Type --".
+* For 0.3.0, add one Assignment Type: "Difference between Two Dates".
+* Upon selection of "Difference between Two Dates", the user shall be prompted to select:
+* * Whether the difference should be in units of days, months, or years (with radio buttons).
+* * The "Start Date" variable or literal value in MM/DD/YYYY format.
+* * The "End Date" variable or literal value in MM/DD/YYYY format.
+* After the user has made these selections, the Add/Update Variable Tool shall contain a text input for the name of the new variable to be created, and an "Add/Update Variable" button.
+* When the Add/Update Variable button is clicked, if the new variable name does not already exist in the dataset, a new variable shall be created with the specified name and populated with the calculated values. If the new variable name already exists in the dataset, the existing variable shall be updated with the calculated values.
+* Results shall be rounded down to the nearest integer.
+* Strip time part from any date values that include time, so that the difference between 1/1/2020 11:00 and 1/2/2020 01:00 is one day, not zero days.
+* If a date value cannot be parsed, the resulting difference for that row shall be set to missing/null.
+* To test, use DOB in Salmonellosis.json as the Start Date and 05/05/2012 as the End Date to update the Age variable, which is missing for all but 10 rows.

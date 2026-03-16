@@ -1,0 +1,54 @@
+<div class="max-w-lg space-y-6">
+  <h2 class="text-xl font-semibold text-[#003B6F]">Add/Update Variable</h2>
+
+  <form
+    hx-post="{% url 'core:run_addvar' %}"
+    hx-target="#analysis-panel"
+    hx-swap="innerHTML show:#analysis-panel:top"
+    class="space-y-5"
+  >
+    {% csrf_token %}
+
+    <!-- Assignment Type -->
+    <div>
+      <label class="block text-sm font-medium text-[#003B6F] mb-1">Assignment Type</label>
+      <select
+        name="assignment_type"
+        hx-get="{% url 'core:addvar_type' %}"
+        hx-target="#addvar-type-area"
+        hx-trigger="change"
+        hx-include="this"
+        class="block w-full rounded-md border border-[#AECDE8] bg-white px-3 py-2
+               text-sm shadow-sm focus:border-[#318CE7] focus:ring-1 focus:ring-[#318CE7]"
+      >
+        <option value="">-- Select Assignment Type --</option>
+        <option value="date_diff">Difference between Two Dates</option>
+      </select>
+    </div>
+
+    <!-- Type-specific inputs load here -->
+    <div id="addvar-type-area"></div>
+
+    <!-- Variable name -->
+    <div>
+      <label class="block text-sm font-medium text-[#003B6F] mb-1">New Variable Name</label>
+      <input
+        name="variable_name"
+        type="text"
+        required
+        placeholder="e.g. Age"
+        class="block w-full rounded-md border border-[#AECDE8] bg-white px-3 py-2
+               text-sm shadow-sm focus:border-[#318CE7] focus:ring-1 focus:ring-[#318CE7]"
+      >
+    </div>
+
+    <button
+      type="submit"
+      class="inline-flex items-center gap-2 px-5 py-2 bg-[#E0A07A] text-white border border-[#C07D55]
+             text-sm font-semibold rounded-md hover:bg-[#C07D55] transition-colors"
+    >
+      Add/Update Variable
+    </button>
+
+  </form>
+</div>

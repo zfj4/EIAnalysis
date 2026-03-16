@@ -1,0 +1,78 @@
+<div class="space-y-4 border-t border-[#AECDE8] pt-4">
+
+  <!-- Units -->
+  <div>
+    <label class="block text-sm font-medium text-[#003B6F] mb-2">Units</label>
+    <div class="flex items-center gap-6 text-sm text-[#003B6F]">
+      <label class="flex items-center gap-1.5 cursor-pointer">
+        <input type="radio" name="units" value="days" checked
+               class="accent-[#318CE7]"> Days
+      </label>
+      <label class="flex items-center gap-1.5 cursor-pointer">
+        <input type="radio" name="units" value="months"
+               class="accent-[#318CE7]"> Months
+      </label>
+      <label class="flex items-center gap-1.5 cursor-pointer">
+        <input type="radio" name="units" value="years"
+               class="accent-[#318CE7]"> Years
+      </label>
+    </div>
+  </div>
+
+  <!-- Start Date -->
+  <div class="space-y-2">
+    <label class="block text-sm font-medium text-[#003B6F]">Start Date</label>
+    <div>
+      <label class="block text-xs text-[#318CE7] mb-1">Variable</label>
+      <select
+        name="start_date_variable"
+        class="block w-full rounded-md border border-[#AECDE8] bg-white px-3 py-2
+               text-sm shadow-sm focus:border-[#318CE7] focus:ring-1 focus:ring-[#318CE7]"
+      >
+        <option value="">-- None --</option>
+        {% for col in columns %}
+        <option value="{{ col }}">{{ col }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs text-[#318CE7] mb-1">Or Literal Value (MM/DD/YYYY)</label>
+      <input
+        name="start_date_literal"
+        type="text"
+        placeholder="MM/DD/YYYY"
+        class="block w-full rounded-md border border-[#AECDE8] bg-white px-3 py-2
+               text-sm shadow-sm focus:border-[#318CE7] focus:ring-1 focus:ring-[#318CE7]"
+      >
+    </div>
+  </div>
+
+  <!-- End Date -->
+  <div class="space-y-2">
+    <label class="block text-sm font-medium text-[#003B6F]">End Date</label>
+    <div>
+      <label class="block text-xs text-[#318CE7] mb-1">Variable</label>
+      <select
+        name="end_date_variable"
+        class="block w-full rounded-md border border-[#AECDE8] bg-white px-3 py-2
+               text-sm shadow-sm focus:border-[#318CE7] focus:ring-1 focus:ring-[#318CE7]"
+      >
+        <option value="">-- None --</option>
+        {% for col in columns %}
+        <option value="{{ col }}">{{ col }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs text-[#318CE7] mb-1">Or Literal Value (MM/DD/YYYY)</label>
+      <input
+        name="end_date_literal"
+        type="text"
+        placeholder="MM/DD/YYYY"
+        class="block w-full rounded-md border border-[#AECDE8] bg-white px-3 py-2
+               text-sm shadow-sm focus:border-[#318CE7] focus:ring-1 focus:ring-[#318CE7]"
+      >
+    </div>
+  </div>
+
+</div>
