@@ -10,7 +10,8 @@
       "Bash(git -C c:/GitHub/EIAnalysis.wiki add Home.md)",
       "Bash(git -C c:/GitHub/EIAnalysis.wiki rebase --continue)",
       "Bash(python:*)",
-      "Bash(python3 -:*)"
+      "Bash(python3 -:*)",
+      "Bash(python3 -c \":*)"
     ]
   }
 }

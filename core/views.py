@@ -960,6 +960,30 @@ def filter_condition_row(request):
 # Add/Update Variable helpers
 # ---------------------------------------------------------------------------
 
+# -- Assigned Expression evaluator --
+
+def _transform_expression(expr):
+    """Transform user expression syntax into valid Python for eval()."""
+    # AND / OR / NOT (word-boundary, case-insensitive) → Python keywords
+    transformed = re.sub(r'\bAND\b', 'and', expr, flags=re.IGNORECASE)
+    transformed = re.sub(r'\bOR\b',  'or',  transformed, flags=re.IGNORECASE)
+    transformed = re.sub(r'\bNOT\b', 'not', transformed, flags=re.IGNORECASE)
+    # Single = used as equality → == (skip !=, <=, >=, ==)
+    transformed = re.sub(r'(?<![!<>=])=(?!=)', '==', transformed)
+    return transformed
+
+
+def _evaluate_expression(expr, row):
+    """Evaluate a transformed expression for one row. Returns result or None on error."""
+    if '__' in expr:
+        return None  # Block dunder attribute access
+    try:
+        transformed = _transform_expression(expr)
+        namespace = {k: v for k, v in row.items()}
+        return eval(transformed, {'__builtins__': {}}, namespace)  # noqa: S307
+    except Exception:
+        return None
+
 _DATE_FORMATS = [
     '%m/%d/%Y',
     '%Y-%m-%d',
@@ -1023,6 +1047,8 @@ def addvar_type(request):
     assignment_type = request.GET.get('assignment_type', '')
     data = request.session.get('data', [])
     columns = sorted(data[0].keys(), key=str.casefold) if data else []
+    if assignment_type == 'expr':
+        return render(request, 'core/partials/addvar_type_expr.html', {})
     if assignment_type == 'date_diff':
         return render(request, 'core/partials/addvar_type_date_diff.html', {'columns': columns})
     return render(request, 'core/partials/addvar_type_empty.html', {})
@@ -1045,6 +1071,25 @@ def run_addvar(request):
     if not variable_name:
         return render(request, 'core/partials/upload_error.html',
                       {'error': 'Please enter a variable name.'}, status=400)
+
+    if assignment_type == 'expr':
+        expression = request.POST.get('expression', '').strip()
+        if not expression:
+            return render(request, 'core/partials/upload_error.html',
+                          {'error': 'Please enter an expression.'}, status=400)
+        updated_data = []
+        for row in data:
+            new_row = dict(row)
+            new_row[variable_name] = _evaluate_expression(expression, row)
+            updated_data.append(new_row)
+        request.session['data'] = updated_data
+        request.session.modified = True
+        is_new = variable_name not in (data[0].keys() if data else [])
+        return render(request, 'core/partials/addvar_status.html', {
+            'variable_name': variable_name,
+            'is_new': is_new,
+            'row_count': len(updated_data),
+        })
 
     if assignment_type == 'date_diff':
         units = request.POST.get('units', 'days').strip()

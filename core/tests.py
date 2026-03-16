@@ -3726,3 +3726,322 @@ class LogBinomialNullRobustnessTests(TestCase):
         for row in call_data:
             self.assertIsNotNone(row.get('outcome'))
             self.assertIsNotNone(row.get('age'))
+
+
+# ===========================================================================
+# 0.3.1  Assigned Expression assignment type
+# ===========================================================================
+
+EXPR_DATA = [
+    {'name': 'Alice', 'score': 10, 'bonus': 5,  'flag': True,  'label': 'yes'},
+    {'name': 'Bob',   'score': 20, 'bonus': 3,  'flag': False, 'label': 'no'},
+    {'name': 'Carol', 'score': 30, 'bonus': None,'flag': True,  'label': 'yes'},
+    {'name': 'Dave',  'score': None,'bonus': 2,  'flag': False, 'label': 'no'},
+    {'name': 'Eve',   'score': 15, 'bonus': 4,  'flag': True,  'label': 'yes'},
+]
+
+
+# ---------------------------------------------------------------------------
+# AddVarExprTypeViewTests
+# ---------------------------------------------------------------------------
+
+class AddVarExprTypeViewTests(TestCase):
+
+    URL = 'core:addvar_type'
+
+    def _set_session(self):
+        session = self.client.session
+        session['data'] = EXPR_DATA
+        session.save()
+
+    def test_expr_type_returns_200(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'assignment_type': 'expr'})
+        self.assertEqual(response.status_code, 200)
+
+    def test_expr_type_uses_correct_template(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'assignment_type': 'expr'})
+        self.assertTemplateUsed(response, 'core/partials/addvar_type_expr.html')
+
+    def test_expr_type_contains_expression_input(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'assignment_type': 'expr'})
+        self.assertContains(response, 'name="expression"')
+
+
+# ---------------------------------------------------------------------------
+# AddVarFormExprOptionTests
+# ---------------------------------------------------------------------------
+
+class AddVarFormExprOptionTests(TestCase):
+
+    URL = 'core:addvar_form'
+
+    def _set_session(self):
+        session = self.client.session
+        session['data'] = EXPR_DATA
+        session.save()
+
+    def test_assigned_expression_option_present(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL))
+        self.assertContains(response, 'Assigned Expression')
+
+    def test_assigned_expression_above_date_diff(self):
+        """'Assigned Expression' must appear before 'Difference between Two Dates'."""
+        self._set_session()
+        response = self.client.get(reverse(self.URL))
+        content = response.content.decode()
+        idx_expr = content.find('Assigned Expression')
+        idx_date = content.find('Difference between Two Dates')
+        self.assertLess(idx_expr, idx_date)
+
+
+# ---------------------------------------------------------------------------
+# RunAddVarExprTests
+# ---------------------------------------------------------------------------
+
+class RunAddVarExprTests(TestCase):
+
+    URL = 'core:run_addvar'
+
+    def _set_session(self, data=None):
+        session = self.client.session
+        session['data'] = data if data is not None else list(EXPR_DATA)
+        session['original_data'] = data if data is not None else list(EXPR_DATA)
+        session['filters'] = []
+        session.save()
+
+    def _post(self, expression, variable_name='result'):
+        return self.client.post(reverse(self.URL), {
+            'assignment_type': 'expr',
+            'expression': expression,
+            'variable_name': variable_name,
+        })
+
+    # --- method/session guards ---
+
+    def test_missing_expression_returns_400(self):
+        self._set_session()
+        response = self.client.post(reverse(self.URL), {
+            'assignment_type': 'expr',
+            'expression': '',
+            'variable_name': 'result',
+        })
+        self.assertEqual(response.status_code, 400)
+
+    def test_valid_run_returns_200(self):
+        self._set_session()
+        response = self._post('score + bonus')
+        self.assertEqual(response.status_code, 200)
+
+    def test_valid_run_uses_status_template(self):
+        self._set_session()
+        response = self._post('score + bonus')
+        self.assertTemplateUsed(response, 'core/partials/addvar_status.html')
+
+    # --- arithmetic expressions ---
+
+    def test_arithmetic_addition(self):
+        self._set_session()
+        self._post('score + bonus')
+        session = self.client.session
+        # Alice: 10+5=15, Bob: 20+3=23
+        self.assertEqual(session['data'][0]['result'], 15)
+        self.assertEqual(session['data'][1]['result'], 23)
+
+    def test_arithmetic_subtraction(self):
+        self._set_session()
+        self._post('score - bonus')
+        session = self.client.session
+        self.assertEqual(session['data'][0]['result'], 5)   # 10-5
+        self.assertEqual(session['data'][1]['result'], 17)  # 20-3
+
+    def test_arithmetic_multiplication(self):
+        self._set_session()
+        self._post('score * bonus')
+        session = self.client.session
+        self.assertEqual(session['data'][0]['result'], 50)  # 10*5
+
+    def test_arithmetic_division(self):
+        self._set_session()
+        self._post('score / bonus')
+        session = self.client.session
+        self.assertAlmostEqual(session['data'][0]['result'], 2.0)  # 10/5
+
+    def test_arithmetic_with_literal(self):
+        self._set_session()
+        self._post('score + 100')
+        session = self.client.session
+        self.assertEqual(session['data'][0]['result'], 110)  # 10+100
+
+    def test_arithmetic_with_parens(self):
+        self._set_session()
+        self._post('(score + bonus) * 2')
+        session = self.client.session
+        self.assertEqual(session['data'][0]['result'], 30)  # (10+5)*2
+
+    # --- logical expressions ---
+
+    def test_logical_equality(self):
+        self._set_session()
+        self._post('flag = True')
+        session = self.client.session
+        self.assertTrue(session['data'][0]['result'])   # Alice: flag=True
+        self.assertFalse(session['data'][1]['result'])  # Bob: flag=False
+
+    def test_logical_inequality(self):
+        self._set_session()
+        self._post('flag != True')
+        session = self.client.session
+        self.assertFalse(session['data'][0]['result'])  # Alice: flag=True, so flag!=True is False
+        self.assertTrue(session['data'][1]['result'])   # Bob: flag=False, so flag!=True is True
+
+    def test_logical_or(self):
+        self._set_session()
+        self._post('score > 15 OR bonus > 4')
+        session = self.client.session
+        # Alice: score=10>15=F, bonus=5>4=T → OR → True
+        self.assertTrue(session['data'][0]['result'])
+        # Bob: score=20>15=T → True
+        self.assertTrue(session['data'][1]['result'])
+
+    def test_logical_and(self):
+        self._set_session()
+        self._post('score > 5 AND bonus > 4')
+        session = self.client.session
+        self.assertTrue(session['data'][0]['result'])   # Alice: 10>5=T, 5>4=T → T
+        self.assertFalse(session['data'][1]['result'])  # Bob: 20>5=T, 3>4=F → F
+
+    def test_logical_not(self):
+        self._set_session()
+        self._post('NOT flag')
+        session = self.client.session
+        self.assertFalse(session['data'][0]['result'])  # NOT True = False
+        self.assertTrue(session['data'][1]['result'])   # NOT False = True
+
+    def test_logical_comparison_lt(self):
+        self._set_session()
+        self._post('score < 20')
+        session = self.client.session
+        self.assertTrue(session['data'][0]['result'])   # 10 < 20
+        self.assertFalse(session['data'][1]['result'])  # 20 < 20
+
+    def test_logical_comparison_lte(self):
+        self._set_session()
+        self._post('score <= 20')
+        session = self.client.session
+        self.assertTrue(session['data'][1]['result'])   # 20 <= 20
+
+    def test_logical_comparison_gte(self):
+        self._set_session()
+        self._post('score >= 20')
+        session = self.client.session
+        self.assertFalse(session['data'][0]['result'])  # 10 >= 20 → False
+        self.assertTrue(session['data'][1]['result'])   # 20 >= 20 → True
+
+    def test_string_equality(self):
+        self._set_session()
+        self._post("label = 'yes'")
+        session = self.client.session
+        self.assertTrue(session['data'][0]['result'])   # 'yes' = 'yes'
+        self.assertFalse(session['data'][1]['result'])  # 'no' = 'yes'
+
+    # --- null/error handling ---
+
+    def test_null_operand_yields_null(self):
+        """When a variable is None, arithmetic fails and result is None."""
+        self._set_session()
+        self._post('score + bonus')
+        session = self.client.session
+        # Carol: score=30, bonus=None → None
+        self.assertIsNone(session['data'][2]['result'])
+        # Dave: score=None, bonus=2 → None
+        self.assertIsNone(session['data'][3]['result'])
+
+    def test_invalid_expression_yields_null_per_row(self):
+        """A syntactically invalid expression yields None for every row."""
+        self._set_session()
+        self._post('score +* bonus')
+        session = self.client.session
+        for row in session['data']:
+            self.assertIsNone(row['result'])
+
+    def test_unknown_variable_yields_null(self):
+        """A variable not in the dataset yields None for every row."""
+        self._set_session()
+        self._post('nonexistent_variable + 1')
+        session = self.client.session
+        for row in session['data']:
+            self.assertIsNone(row['result'])
+
+    def test_creates_new_variable(self):
+        self._set_session()
+        self._post('score * 2', variable_name='doubled_score')
+        session = self.client.session
+        self.assertIn('doubled_score', session['data'][0])
+
+    def test_updates_existing_variable(self):
+        self._set_session()
+        original = list(EXPR_DATA)
+        original[0] = dict(original[0])
+        original[0]['score'] = 999
+        self._set_session(original)
+        self._post('bonus * 2', variable_name='score')
+        session = self.client.session
+        self.assertEqual(session['data'][0]['score'], 10)   # 5*2
+
+
+# ---------------------------------------------------------------------------
+# AteEggsIntegrationTest
+# ---------------------------------------------------------------------------
+
+class AteEggsIntegrationTest(TestCase):
+    """
+    Integration test: load Salmonellosis.json, compute AteEggs using
+    'ChefSalad = True OR EggSaladSandwich = True', verify counts.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        with open(SAMPLE_DATA_PATH) as f:
+            cls.data = json.load(f)
+
+    def _set_session(self):
+        session = self.client.session
+        session['data'] = list(self.data)
+        session['original_data'] = list(self.data)
+        session['filters'] = []
+        session.save()
+
+    def test_ate_eggs_true_count(self):
+        """AteEggs True count must equal rows where ChefSalad=True OR EggSaladSandwich=True."""
+        self._set_session()
+        self.client.post(reverse('core:run_addvar'), {
+            'assignment_type': 'expr',
+            'expression': 'ChefSalad = True OR EggSaladSandwich = True',
+            'variable_name': 'AteEggs',
+        })
+        session = self.client.session
+        data = session['data']
+        ate_eggs_true = sum(1 for r in data if r.get('AteEggs') is True)
+        ate_eggs_false = sum(1 for r in data if r.get('AteEggs') is False)
+        expected_true = sum(1 for r in self.data
+                            if r.get('ChefSalad') is True or r.get('EggSaladSandwich') is True)
+        expected_false = len(self.data) - expected_true
+        self.assertEqual(ate_eggs_true, expected_true)
+        self.assertEqual(ate_eggs_false, expected_false)
+
+    def test_ate_eggs_no_nulls(self):
+        """AteEggs must have no null values since ChefSalad/EggSaladSandwich have no nulls."""
+        self._set_session()
+        self.client.post(reverse('core:run_addvar'), {
+            'assignment_type': 'expr',
+            'expression': 'ChefSalad = True OR EggSaladSandwich = True',
+            'variable_name': 'AteEggs',
+        })
+        session = self.client.session
+        nulls = sum(1 for r in session['data'] if r.get('AteEggs') is None)
+        self.assertEqual(nulls, 0)

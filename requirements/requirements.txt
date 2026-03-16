@@ -125,3 +125,17 @@ Traceback (most recent call last):
 TypeError: float() argument must be a string or a real number, not 'NoneType'
 [16/Mar/2026 07:57:11] "POST /analysis/means-run/ HTTP/1.1" 500 106295
 * Exclude rows with missing values in the "Means of" variable from the analysis, as the epiinfo Means class does not handle missing values and causes the entire analysis to fail if any are present.
+
+0.3.1 Requirements:
+* In the Add/Update Variable Tool, add a new Assignment Type: "Assigned Expression".
+* Place "Assigned Expression" above "Difference between Two Dates" in the Assignment Type dropdown.
+* Upon selection of "Assigned Expression", the user shall be prompted to enter an expression in a text input field.
+* An expression may be an arithmetic expression that returns a number or a logical expression that returns a boolean value.
+* An arithmetic expression may contain variable names, literal values, parentheses, and the following operators: +, -, *, /.
+* A logical expression may contain variable names, literal values, parentheses, and the following operators: AND, OR, NOT, =, !=, <, <=, >, >=.
+* Variable names in expressions shall be case-sensitive and must match exactly the variable names in the dataset
+* Literal values in expressions may be strings (enclosed in single or double quotes), numbers, or dates in MM/DD/YYYY format (enclosed in single or double quotes).
+* The expression shall be evaluated for each row in the dataset, and the resulting values shall be assigned to the new or existing variable specified by the user.
+* If the new variable name specified by the user does not already exist in the dataset, a new variable shall be created with that name and populated with the calculated values. If the new variable name already exists in the dataset, the existing variable shall be updated with the calculated values.
+* If an expression cannot be evaluated for a particular row (e.g., due to missing values, invalid syntax, or other errors), the resulting value for that row shall be set to missing/null.
+* To test, load Salmonellosis.json and create a new variable called "AteEggs" with the Assigned Expression: ChefSalad = True OR EggSaladSandwich = True. Then run a Frequency analysis on the AteEggs variable and verify that the results match expectations based on the values of ChefSalad and EggSalwich variables in the dataset.
