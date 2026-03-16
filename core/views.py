@@ -88,13 +88,22 @@ def _apply_filter_definition(data, conditions):
 
 def _compute_frequency_table(data, variable, weight_variable=''):
     """Return frequency rows and metadata for one variable/stratum."""
-    sorted_data = sorted(data, key=lambda d: d.get(variable, ''))
+    def _sort_key(d):
+        v = d.get(variable)
+        if v is None or v == '':
+            return (1, 0.0, '')
+        try:
+            return (0, float(v), '')
+        except (ValueError, TypeError):
+            return (0, 0.0, str(v))
+    sorted_data = sorted(data, key=_sort_key)
     vals_and_freqs = {}
     total = 0.0
     for row in sorted_data:
-        if variable not in row:
+        v = row.get(variable)
+        if v is None or v == '':
             continue
-        val = str(row[variable])
+        val = str(v)
         weight = float(row[weight_variable]) if weight_variable and weight_variable in row else 1.0
         total += weight
         vals_and_freqs[val] = vals_and_freqs.get(val, 0.0) + weight
