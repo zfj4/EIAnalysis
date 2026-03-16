@@ -79,6 +79,14 @@ def _row_matches_condition(row, variable, operator, value):
     return False
 
 
+def _complete_cases(data, *variables):
+    """Return rows where every listed variable is non-null and non-empty."""
+    return [
+        row for row in data
+        if all(row.get(v) is not None and row.get(v) != '' for v in variables)
+    ]
+
+
 def _apply_filter_definition(data, conditions):
     """Keep rows that satisfy ANY condition in conditions (OR logic)."""
     return [
@@ -252,6 +260,8 @@ def run_analysis(request):
             status=400,
         )
 
+    data = _complete_cases(data, outcome, *exposures)
+
     input_variable_list = {
         'outcomeVariable': outcome,
         'exposureVariables': exposures,
@@ -371,6 +381,8 @@ def run_linear(request):
             status=400,
         )
 
+    data = _complete_cases(data, outcome, *exposures)
+
     interaction_terms = [
         f'{a}*{b}' for a, b in combinations(interaction_variables, 2)
     ] if len(interaction_variables) >= 2 else []
@@ -480,6 +492,11 @@ def run_logistic(request):
             {'error': 'Please select at least one Exposure Variable.'},
             status=400,
         )
+
+    key_vars = [outcome] + exposures
+    if match_variable:
+        key_vars.append(match_variable)
+    data = _complete_cases(data, *key_vars)
 
     # Build pairwise interaction terms
     interaction_terms = [
@@ -597,6 +614,8 @@ def run_logbinomial(request):
             status=400,
         )
 
+    data = _complete_cases(data, outcome, *exposures)
+
     interaction_terms = [
         f'{a}*{b}' for a, b in combinations(interaction_variables, 2)
     ] if len(interaction_variables) >= 2 else []
@@ -691,20 +710,60 @@ def run_means(request):
             status=400,
         )
 
+    key_vars = [means_variable]
+    if crosstab_variable:
+        key_vars.append(crosstab_variable)
+    data = _complete_cases(data, *key_vars)
+
     cols = {'meanVariable': means_variable}
     if crosstab_variable:
         cols['crosstabVariable'] = crosstab_variable
 
     m = Means()
-    result = m.Run(cols, data)
-
-    if crosstab_variable:
-        anova = result[-1]
-        ttest = result[-2]
-        group_stats = result[:-2]
-        show_ttest = len(group_stats) == 2
-    else:
-        group_stats = result
+    try:
+        result = m.Run(cols, data)
+        if crosstab_variable:
+            anova = result[-1]
+            ttest = result[-2]
+            group_stats = result[:-2]
+            show_ttest = len(group_stats) == 2
+        else:
+            group_stats = result
+            ttest = None
+            anova = None
+            show_ttest = False
+    except (ZeroDivisionError, TypeError, ValueError):
+        # Fallback: compute per-group descriptive stats individually (no T-test/ANOVA)
+        if crosstab_variable:
+            strata = sorted(set(
+                str(row.get(crosstab_variable, ''))
+                for row in data
+                if row.get(crosstab_variable) is not None and row.get(crosstab_variable) != ''
+            ))
+            group_stats = []
+            for sv in strata:
+                group_data = [r for r in data if str(r.get(crosstab_variable, '')) == sv]
+                try:
+                    g_result = Means().Run({'meanVariable': means_variable}, group_data)
+                    g = g_result[0]
+                    g['crosstabVariable'] = sv
+                    group_stats.append(g)
+                except (ZeroDivisionError, TypeError, ValueError, IndexError):
+                    # Single-observation group: compute basic stats manually
+                    try:
+                        val = float(group_data[0].get(means_variable))
+                        g = {
+                            'obs': len(group_data), 'total': val, 'mean': val,
+                            'variance': 0, 'std_dev': 0,
+                            'min': val, 'q25': val, 'q50': val, 'q75': val,
+                            'max': val, 'mode': val,
+                            'crosstabVariable': sv,
+                        }
+                        group_stats.append(g)
+                    except (TypeError, ValueError):
+                        pass
+        else:
+            group_stats = []
         ttest = None
         anova = None
         show_ttest = False

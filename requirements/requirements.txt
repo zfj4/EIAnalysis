@@ -97,3 +97,31 @@ Initial version (1.0) of the application shall meet the following requirements:
 * Strip time part from any date values that include time, so that the difference between 1/1/2020 11:00 and 1/2/2020 01:00 is one day, not zero days.
 * If a date value cannot be parsed, the resulting difference for that row shall be set to missing/null.
 * To test, use DOB in Salmonellosis.json as the Start Date and 05/05/2012 as the End Date to update the Age variable, which is missing for all but 10 rows.
+
+0.3.0.1 Requirements:
+* Means analysis fails with missing values.
+* Steps to reproduce:
+* * Load Salmonellosis.json.
+* * Select Means Analysis.
+* * Select Age as the "Means of" variable and Ill as the "Cross-tabulate" variable.
+* * Click "Run Analysis".
+* Expected result: The analysis runs and produces the same results as the Means analysis in sample_data\Means.html, which uses the same dataset and variables.
+* Actual result: The analysis fails to run and errors are displayed in the terminal:
+Internal Server Error: /analysis/means-run/
+Traceback (most recent call last):
+  File "C:\GitHub\EIAnalysis\.venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\GitHub\EIAnalysis\.venv\Lib\site-packages\django\core\handlers\base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\GitHub\EIAnalysis\core\views.py", line 699, in run_means
+    result = m.Run(cols, data)
+  File "C:\GitHub\EIAnalysis\.venv\Lib\site-packages\epiinfo\Means.py", line 614, in Run
+    workingTable = self.CreateWorkingTable(cols['meanVariable'],
+                                           xTabVar,
+                                           lod)
+  File "C:\GitHub\EIAnalysis\.venv\Lib\site-packages\epiinfo\Means.py", line 32, in CreateWorkingTable
+    if float(r[pNumericVariable]) in workingDict:
+       ~~~~~^^^^^^^^^^^^^^^^^^^^^
+TypeError: float() argument must be a string or a real number, not 'NoneType'
+[16/Mar/2026 07:57:11] "POST /analysis/means-run/ HTTP/1.1" 500 106295
+* Exclude rows with missing values in the "Means of" variable from the analysis, as the epiinfo Means class does not handle missing values and causes the entire analysis to fail if any are present.

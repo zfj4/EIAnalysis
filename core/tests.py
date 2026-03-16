@@ -3490,3 +3490,239 @@ class DateDiffIntegrationTests(TestCase):
         for idx, expected_age in self.KNOWN.items():
             with self.subTest(row=idx):
                 self.assertEqual(data[idx]['Age'], expected_age)
+
+
+# ===========================================================================
+# 0.3.0.1  Missing-value robustness tests
+# ===========================================================================
+# All analyses must tolerate rows where the key variables are None/missing.
+# The standard approach is list-wise deletion: exclude rows where any variable
+# involved in the analysis is null or empty before passing data to epiinfo.
+# ===========================================================================
+
+NULL_DATA_BASE = [
+    {'outcome': 'Yes', 'exposure': 'High', 'age': '30', 'score': '5.0'},
+    {'outcome': 'Yes', 'exposure': 'Low',  'age': '25', 'score': '3.0'},
+    {'outcome': 'No',  'exposure': 'High', 'age': '45', 'score': '7.0'},
+    {'outcome': 'No',  'exposure': 'Low',  'age': None,  'score': None},
+    {'outcome': 'Yes', 'exposure': 'High', 'age': '28', 'score': '4.0'},
+    {'outcome': None,  'exposure': 'Low',  'age': '33', 'score': '6.0'},
+    {'outcome': 'No',  'exposure': None,   'age': '40', 'score': '8.0'},
+]
+
+
+class MeansNullRobustnessTests(TestCase):
+    """Means Analysis must not crash when the means variable contains null values."""
+
+    URL = 'core:run_means'
+
+    def _set_session(self, data):
+        session = self.client.session
+        session['data'] = data
+        session.save()
+
+    def test_means_with_null_means_variable_returns_200(self):
+        """run_means must return 200 when the means variable has null values."""
+        self._set_session(NULL_DATA_BASE)
+        response = self.client.post(reverse(self.URL), {
+            'means_variable': 'age',
+            'crosstab_variable': '',
+        })
+        self.assertEqual(response.status_code, 200)
+
+    def test_means_with_null_crosstab_variable_returns_200(self):
+        """run_means must return 200 when the crosstab variable has null values."""
+        self._set_session(NULL_DATA_BASE)
+        response = self.client.post(reverse(self.URL), {
+            'means_variable': 'age',
+            'crosstab_variable': 'outcome',
+        })
+        self.assertEqual(response.status_code, 200)
+
+    def test_means_salmonellosis_age_ill_returns_200(self):
+        """Means of Age cross-tab by Ill must return 200 on Salmonellosis.json."""
+        with open(SAMPLE_DATA_PATH) as f:
+            data = json.load(f)
+        self._set_session(data)
+        response = self.client.post(reverse(self.URL), {
+            'means_variable': 'Age',
+            'crosstab_variable': 'Ill',
+        })
+        self.assertEqual(response.status_code, 200)
+
+    def test_means_salmonellosis_uses_results_template(self):
+        """Means on Salmonellosis with nulls must render the results template."""
+        with open(SAMPLE_DATA_PATH) as f:
+            data = json.load(f)
+        self._set_session(data)
+        response = self.client.post(reverse(self.URL), {
+            'means_variable': 'Age',
+            'crosstab_variable': 'Ill',
+        })
+        self.assertTemplateUsed(response, 'core/partials/means_results.html')
+
+    def test_means_salmonellosis_shows_all_10_observations(self):
+        """Both crosstab groups must appear; total obs across groups must equal 10."""
+        with open(SAMPLE_DATA_PATH) as f:
+            data = json.load(f)
+        self._set_session(data)
+        response = self.client.post(reverse(self.URL), {
+            'means_variable': 'Age',
+            'crosstab_variable': 'Ill',
+        })
+        ctx = response.context
+        group_stats = ctx['group_stats']
+        # Ill=0 has 1 row, Ill=1 has 9 rows → total obs = 10
+        total_obs = sum(g['obs'] for g in group_stats)
+        self.assertEqual(total_obs, 10)
+        self.assertEqual(len(group_stats), 2)
+
+
+class TablesNullRobustnessTests(TestCase):
+    """Tables Analysis must not crash when outcome or exposure variables contain nulls."""
+
+    URL = 'core:run_analysis'
+
+    def _set_session(self, data):
+        session = self.client.session
+        session['data'] = data
+        session.save()
+
+    def test_tables_with_null_outcome_returns_200(self):
+        """run_analysis must return 200 when the outcome variable has null values."""
+        self._set_session(NULL_DATA_BASE)
+        with patch('core.views.TablesAnalysis') as MockTA:
+            MockTA.return_value.Run.return_value = MOCK_TABLES_RESULT
+            response = self.client.post(reverse(self.URL), {
+                'outcome_variable': 'outcome',
+                'exposure_variables': ['exposure'],
+            })
+        self.assertEqual(response.status_code, 200)
+
+    def test_tables_with_null_exposure_returns_200(self):
+        """run_analysis must return 200 when an exposure variable has null values."""
+        self._set_session(NULL_DATA_BASE)
+        with patch('core.views.TablesAnalysis') as MockTA:
+            MockTA.return_value.Run.return_value = MOCK_TABLES_RESULT
+            response = self.client.post(reverse(self.URL), {
+                'outcome_variable': 'outcome',
+                'exposure_variables': ['exposure'],
+            })
+        self.assertEqual(response.status_code, 200)
+
+    def test_tables_null_rows_excluded_from_epiinfo_call(self):
+        """Rows where outcome or exposure is null must be excluded from the data passed to epiinfo."""
+        self._set_session(NULL_DATA_BASE)
+        with patch('core.views.TablesAnalysis') as MockTA:
+            MockTA.return_value.Run.return_value = MOCK_TABLES_RESULT
+            self.client.post(reverse(self.URL), {
+                'outcome_variable': 'outcome',
+                'exposure_variables': ['exposure'],
+            })
+        call_data = MockTA.return_value.Run.call_args[0][1]
+        # Rows with null outcome or null exposure must be excluded
+        for row in call_data:
+            self.assertIsNotNone(row.get('outcome'))
+            self.assertIsNotNone(row.get('exposure'))
+
+
+class LinearNullRobustnessTests(TestCase):
+    """Linear Regression must not crash when outcome or exposure has null values."""
+
+    URL = 'core:run_linear'
+
+    def _set_session(self, data):
+        session = self.client.session
+        session['data'] = data
+        session.save()
+
+    def test_linear_with_null_score_returns_200(self):
+        self._set_session(NULL_DATA_BASE)
+        with patch('core.views.LinearRegression') as MockLR:
+            MockLR.return_value.doRegression.return_value = MOCK_LINEAR_RESULT
+            response = self.client.post(reverse(self.URL), {
+                'outcome_variable': 'score',
+                'exposure_variables': ['age'],
+            })
+        self.assertEqual(response.status_code, 200)
+
+    def test_linear_null_rows_excluded_from_epiinfo_call(self):
+        self._set_session(NULL_DATA_BASE)
+        with patch('core.views.LinearRegression') as MockLR:
+            MockLR.return_value.doRegression.return_value = MOCK_LINEAR_RESULT
+            self.client.post(reverse(self.URL), {
+                'outcome_variable': 'score',
+                'exposure_variables': ['age'],
+            })
+        call_data = MockLR.return_value.doRegression.call_args[0][1]
+        for row in call_data:
+            self.assertIsNotNone(row.get('score'))
+            self.assertIsNotNone(row.get('age'))
+
+
+class LogisticNullRobustnessTests(TestCase):
+    """Logistic Regression must not crash when outcome or exposure has null values."""
+
+    URL = 'core:run_logistic'
+
+    def _set_session(self, data):
+        session = self.client.session
+        session['data'] = data
+        session.save()
+
+    def test_logistic_with_nulls_returns_200(self):
+        self._set_session(NULL_DATA_BASE)
+        with patch('core.views.LogisticRegression') as MockLR:
+            MockLR.return_value.doRegression.return_value = MOCK_LOGISTIC_RESULT
+            response = self.client.post(reverse(self.URL), {
+                'outcome_variable': 'outcome',
+                'exposure_variables': ['age'],
+            })
+        self.assertEqual(response.status_code, 200)
+
+    def test_logistic_null_rows_excluded_from_epiinfo_call(self):
+        self._set_session(NULL_DATA_BASE)
+        with patch('core.views.LogisticRegression') as MockLR:
+            MockLR.return_value.doRegression.return_value = MOCK_LOGISTIC_RESULT
+            self.client.post(reverse(self.URL), {
+                'outcome_variable': 'outcome',
+                'exposure_variables': ['age'],
+            })
+        call_data = MockLR.return_value.doRegression.call_args[0][1]
+        for row in call_data:
+            self.assertIsNotNone(row.get('outcome'))
+            self.assertIsNotNone(row.get('age'))
+
+
+class LogBinomialNullRobustnessTests(TestCase):
+    """Log-Binomial Regression must not crash when outcome or exposure has null values."""
+
+    URL = 'core:run_logbinomial'
+
+    def _set_session(self, data):
+        session = self.client.session
+        session['data'] = data
+        session.save()
+
+    def test_logbinomial_with_nulls_returns_200(self):
+        self._set_session(NULL_DATA_BASE)
+        with patch('core.views.LogBinomialRegression') as MockLB:
+            MockLB.return_value.doRegression.return_value = MOCK_LOGBINOMIAL_RESULT
+            response = self.client.post(reverse(self.URL), {
+                'outcome_variable': 'outcome',
+                'exposure_variables': ['age'],
+            })
+        self.assertEqual(response.status_code, 200)
+
+    def test_logbinomial_null_rows_excluded_from_epiinfo_call(self):
+        self._set_session(NULL_DATA_BASE)
+        with patch('core.views.LogBinomialRegression') as MockLB:
+            MockLB.return_value.doRegression.return_value = MOCK_LOGBINOMIAL_RESULT
+            self.client.post(reverse(self.URL), {
+                'outcome_variable': 'outcome',
+                'exposure_variables': ['age'],
+            })
+        call_data = MockLB.return_value.doRegression.call_args[0][1]
+        for row in call_data:
+            self.assertIsNotNone(row.get('outcome'))
+            self.assertIsNotNone(row.get('age'))
