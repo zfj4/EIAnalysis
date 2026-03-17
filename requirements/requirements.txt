@@ -139,3 +139,9 @@ TypeError: float() argument must be a string or a real number, not 'NoneType'
 * If the new variable name specified by the user does not already exist in the dataset, a new variable shall be created with that name and populated with the calculated values. If the new variable name already exists in the dataset, the existing variable shall be updated with the calculated values.
 * If an expression cannot be evaluated for a particular row (e.g., due to missing values, invalid syntax, or other errors), the resulting value for that row shall be set to missing/null.
 * To test, load Salmonellosis.json and create a new variable called "AteEggs" with the Assigned Expression: ChefSalad = True OR EggSaladSandwich = True. Then run a Frequency analysis on the AteEggs variable and verify that the results match expectations based on the values of ChefSalad and EggSalwich variables in the dataset.
+
+0.3.1.1 Requirements:
+* On loading a data file, build a list of variable names and their data types (e.g., numeric, string, date) to facilitate expression parsing and evaluation in the "Assigned Expression" functionality of the Add/Update Variable Tool.
+* Use only variables that are dates or can be parsed or trimmed as dates in the drop-downs in the "Difference between Two Dates" functionality of the Add/Update Variable Tool, and provide an error message if the user attempts to use a non-date variable in that functionality.
+* When a variable is selected from one of these drop-downs, write that variable in the corresponding text input field.
+* On execution of "Difference between Two Dates", use the text input field values rather than the drop-down values to determine which variables to use, so that the user can type in variable names rather than selecting from the drop-downs if they prefer. Typed text overrides drop-down selections, but if the text input field is left blank, then the drop-down selection is used.

@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -6,6 +7,8 @@ from unittest.mock import MagicMock, patch
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
+
+from core.views import _infer_variable_types
 
 # ---------------------------------------------------------------------------
 # Sample dataset shared across analysis tests
@@ -4045,3 +4048,243 @@ class AteEggsIntegrationTest(TestCase):
         session = self.client.session
         nulls = sum(1 for r in session['data'] if r.get('AteEggs') is None)
         self.assertEqual(nulls, 0)
+
+
+# ===========================================================================
+# 0.3.1.1  Variable Type Detection and Date-Only Dropdowns
+# ===========================================================================
+
+TYPED_DATA = [
+    {'name': 'Alice', 'dob': '1/1/1980', 'age': '30', 'score': '95.5'},
+    {'name': 'Bob',   'dob': '6/15/1990', 'age': '25', 'score': '87.0'},
+    {'name': 'Carol', 'dob': '3/3/2000',  'age': '45', 'score': '92.3'},
+]
+
+
+# ---------------------------------------------------------------------------
+# InferVariableTypesTests
+# ---------------------------------------------------------------------------
+
+class InferVariableTypesTests(TestCase):
+    """Unit tests for the _infer_variable_types helper."""
+
+    def test_numeric_variable_classified_numeric(self):
+        data = [{'x': '1'}, {'x': '2'}, {'x': '3'}]
+        types = _infer_variable_types(data)
+        self.assertEqual(types['x'], 'numeric')
+
+    def test_date_variable_classified_date(self):
+        data = [{'d': '1/1/2020'}, {'d': '6/15/2021'}, {'d': '3/3/2000'}]
+        types = _infer_variable_types(data)
+        self.assertEqual(types['d'], 'date')
+
+    def test_string_variable_classified_string(self):
+        data = [{'s': 'hello'}, {'s': 'world'}, {'s': 'foo'}]
+        types = _infer_variable_types(data)
+        self.assertEqual(types['s'], 'string')
+
+    def test_all_null_variable_classified_string(self):
+        data = [{'x': None}, {'x': None}]
+        types = _infer_variable_types(data)
+        self.assertEqual(types['x'], 'string')
+
+    def test_date_with_time_classified_date(self):
+        data = [{'d': '1/1/1980 12:00:00 AM'}, {'d': '6/15/1990 12:00:00 AM'}]
+        types = _infer_variable_types(data)
+        self.assertEqual(types['d'], 'date')
+
+    def test_mostly_date_with_bad_value_classified_date(self):
+        """A variable with >=50% date values should be classified as date."""
+        data = [
+            {'d': '1/1/1980'},
+            {'d': '6/15/1990'},
+            {'d': 'bad-date'},
+            {'d': '3/3/2000'},
+        ]
+        types = _infer_variable_types(data)
+        self.assertEqual(types['d'], 'date')
+
+    def test_multiple_columns_classified_correctly(self):
+        types = _infer_variable_types(TYPED_DATA)
+        self.assertEqual(types['name'], 'string')
+        self.assertEqual(types['dob'], 'date')
+        self.assertEqual(types['age'], 'numeric')
+        self.assertEqual(types['score'], 'numeric')
+
+    def test_empty_data_returns_empty_dict(self):
+        self.assertEqual(_infer_variable_types([]), {})
+
+
+# ---------------------------------------------------------------------------
+# UploadJsonVariableTypesTests
+# ---------------------------------------------------------------------------
+
+class UploadJsonVariableTypesTests(TestCase):
+    """Test that upload_json stores variable_types in the session."""
+
+    def _upload(self, data):
+        content = json.dumps(data).encode()
+        f = SimpleUploadedFile('test.json', content, content_type='application/json')
+        return self.client.post(reverse('core:upload_json'), {'json_file': f})
+
+    def test_upload_stores_variable_types(self):
+        self._upload(TYPED_DATA)
+        self.assertIn('variable_types', self.client.session)
+
+    def test_upload_classifies_numeric_column(self):
+        self._upload(TYPED_DATA)
+        self.assertEqual(self.client.session['variable_types'].get('age'), 'numeric')
+
+    def test_upload_classifies_date_column(self):
+        self._upload(TYPED_DATA)
+        self.assertEqual(self.client.session['variable_types'].get('dob'), 'date')
+
+    def test_upload_classifies_string_column(self):
+        self._upload(TYPED_DATA)
+        self.assertEqual(self.client.session['variable_types'].get('name'), 'string')
+
+
+# ---------------------------------------------------------------------------
+# DateDiffDateOnlyDropdownTests
+# ---------------------------------------------------------------------------
+
+class DateDiffDateOnlyDropdownTests(TestCase):
+    """Test that only date variables appear in Difference between Two Dates dropdowns."""
+
+    URL = 'core:addvar_type'
+
+    def _set_session(self, variable_types=None):
+        session = self.client.session
+        session['data'] = list(TYPED_DATA)
+        session['original_data'] = list(TYPED_DATA)
+        session['filters'] = []
+        if variable_types is not None:
+            session['variable_types'] = variable_types
+        session.save()
+
+    def test_date_column_appears_in_dropdowns(self):
+        self._set_session({'name': 'string', 'dob': 'date', 'age': 'numeric', 'score': 'numeric'})
+        response = self.client.get(reverse(self.URL), {'assignment_type': 'date_diff'})
+        option_values = re.findall(r'<option[^>]*value="([^"]*)"', response.content.decode())
+        self.assertIn('dob', option_values)
+
+    def test_numeric_column_excluded_from_dropdowns(self):
+        self._set_session({'name': 'string', 'dob': 'date', 'age': 'numeric', 'score': 'numeric'})
+        response = self.client.get(reverse(self.URL), {'assignment_type': 'date_diff'})
+        option_values = re.findall(r'<option[^>]*value="([^"]*)"', response.content.decode())
+        self.assertNotIn('age', option_values)
+        self.assertNotIn('score', option_values)
+
+    def test_string_column_excluded_from_dropdowns(self):
+        self._set_session({'name': 'string', 'dob': 'date', 'age': 'numeric', 'score': 'numeric'})
+        response = self.client.get(reverse(self.URL), {'assignment_type': 'date_diff'})
+        option_values = re.findall(r'<option[^>]*value="([^"]*)"', response.content.decode())
+        self.assertNotIn('name', option_values)
+
+
+# ---------------------------------------------------------------------------
+# DateDiffTextInputTests
+# ---------------------------------------------------------------------------
+
+class DateDiffTextInputTests(TestCase):
+    """Test that text inputs exist alongside dropdowns and have onchange sync."""
+
+    URL = 'core:addvar_type'
+
+    def _set_session(self):
+        session = self.client.session
+        session['data'] = list(ADDVAR_DATA)
+        session['original_data'] = list(ADDVAR_DATA)
+        session['filters'] = []
+        session.save()
+
+    def test_start_date_variable_text_input_exists(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'assignment_type': 'date_diff'})
+        self.assertContains(response, 'name="start_date_variable"')
+
+    def test_end_date_variable_text_input_exists(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'assignment_type': 'date_diff'})
+        self.assertContains(response, 'name="end_date_variable"')
+
+    def test_start_dropdown_has_onchange_to_populate_text(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'assignment_type': 'date_diff'})
+        content = response.content.decode()
+        self.assertIn('onchange', content)
+        self.assertIn('start_date_variable', content)
+
+    def test_end_dropdown_has_onchange_to_populate_text(self):
+        self._set_session()
+        response = self.client.get(reverse(self.URL), {'assignment_type': 'date_diff'})
+        content = response.content.decode()
+        self.assertIn('onchange', content)
+        self.assertIn('end_date_variable', content)
+
+
+# ---------------------------------------------------------------------------
+# RunAddVarTextOverrideDateDiffTests
+# ---------------------------------------------------------------------------
+
+class RunAddVarTextOverrideDateDiffTests(TestCase):
+    """Test text-input override and dropdown fallback for date_diff execution."""
+
+    URL = 'core:run_addvar'
+
+    def _set_session(self, variable_types=None):
+        session = self.client.session
+        session['data'] = list(ADDVAR_DATA)
+        session['original_data'] = list(ADDVAR_DATA)
+        session['filters'] = []
+        if variable_types is not None:
+            session['variable_types'] = variable_types
+        session.save()
+
+    def test_text_input_used_when_provided(self):
+        """Text input value is used as start variable when non-empty."""
+        self._set_session()
+        response = self.client.post(reverse(self.URL), {
+            'assignment_type': 'date_diff',
+            'units': 'years',
+            'start_date_variable': 'dob',          # text input
+            'start_date_variable_select': '',       # dropdown empty
+            'start_date_literal': '',
+            'end_date_variable': '',
+            'end_date_literal': ADDVAR_END_DATE,
+            'variable_name': 'age_computed',
+        })
+        self.assertEqual(response.status_code, 200)
+        alice = next(r for r in self.client.session['data'] if r['name'] == 'Alice')
+        self.assertEqual(alice['age_computed'], 32)
+
+    def test_dropdown_used_when_text_is_blank(self):
+        """Dropdown value is used as start variable when text input is blank."""
+        self._set_session()
+        response = self.client.post(reverse(self.URL), {
+            'assignment_type': 'date_diff',
+            'units': 'years',
+            'start_date_variable': '',              # text input blank
+            'start_date_variable_select': 'dob',   # dropdown has value
+            'start_date_literal': '',
+            'end_date_variable': '',
+            'end_date_literal': ADDVAR_END_DATE,
+            'variable_name': 'age_computed',
+        })
+        self.assertEqual(response.status_code, 200)
+        alice = next(r for r in self.client.session['data'] if r['name'] == 'Alice')
+        self.assertEqual(alice['age_computed'], 32)
+
+    def test_non_date_variable_in_text_returns_400(self):
+        """Using a known non-date variable (when types known) must return 400."""
+        self._set_session({'name': 'string', 'dob': 'date', 'age': 'numeric'})
+        response = self.client.post(reverse(self.URL), {
+            'assignment_type': 'date_diff',
+            'units': 'years',
+            'start_date_variable': 'name',          # non-date variable
+            'start_date_literal': '',
+            'end_date_variable': '',
+            'end_date_literal': ADDVAR_END_DATE,
+            'variable_name': 'test',
+        })
+        self.assertEqual(response.status_code, 400)

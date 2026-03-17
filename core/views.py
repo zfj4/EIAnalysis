@@ -79,6 +79,37 @@ def _row_matches_condition(row, variable, operator, value):
     return False
 
 
+def _infer_variable_types(data):
+    """Return dict of variable_name → type ('numeric', 'date', 'string') for each column."""
+    if not data:
+        return {}
+    types = {}
+    for col in data[0].keys():
+        non_null = [row[col] for row in data if row.get(col) is not None and row.get(col) != '']
+        if not non_null:
+            types[col] = 'string'
+            continue
+        numeric_count = sum(1 for v in non_null if _try_float(v))
+        date_count = sum(1 for v in non_null if _parse_date(v) is not None)
+        total = len(non_null)
+        if date_count / total >= 0.5 and numeric_count < total:
+            types[col] = 'date'
+        elif numeric_count == total:
+            types[col] = 'numeric'
+        else:
+            types[col] = 'string'
+    return types
+
+
+def _try_float(value):
+    """Return True if value can be parsed as float."""
+    try:
+        float(value)
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
 def _complete_cases(data, *variables):
     """Return rows where every listed variable is non-null and non-empty."""
     return [
@@ -198,6 +229,7 @@ def upload_json(request):
     request.session['original_data'] = data
     request.session['filters'] = []
     request.session['data_filename'] = uploaded_file.name
+    request.session['variable_types'] = _infer_variable_types(data)
 
     columns = list(data[0].keys()) if data else []
     return render(
@@ -1050,7 +1082,11 @@ def addvar_type(request):
     if assignment_type == 'expr':
         return render(request, 'core/partials/addvar_type_expr.html', {})
     if assignment_type == 'date_diff':
-        return render(request, 'core/partials/addvar_type_date_diff.html', {'columns': columns})
+        variable_types = request.session.get('variable_types') or _infer_variable_types(data)
+        date_columns = [c for c in columns if variable_types.get(c) == 'date']
+        return render(request, 'core/partials/addvar_type_date_diff.html', {
+            'columns': date_columns,
+        })
     return render(request, 'core/partials/addvar_type_empty.html', {})
 
 
@@ -1093,9 +1129,14 @@ def run_addvar(request):
 
     if assignment_type == 'date_diff':
         units = request.POST.get('units', 'days').strip()
+        # Text input takes priority; fall back to dropdown if blank
         start_var = request.POST.get('start_date_variable', '').strip()
+        if not start_var:
+            start_var = request.POST.get('start_date_variable_select', '').strip()
         start_lit = request.POST.get('start_date_literal', '').strip()
         end_var = request.POST.get('end_date_variable', '').strip()
+        if not end_var:
+            end_var = request.POST.get('end_date_variable_select', '').strip()
         end_lit = request.POST.get('end_date_literal', '').strip()
 
         if not start_var and not start_lit:
@@ -1104,6 +1145,17 @@ def run_addvar(request):
         if not end_var and not end_lit:
             return render(request, 'core/partials/upload_error.html',
                           {'error': 'Please specify an End Date variable or literal value.'}, status=400)
+
+        # Validate that referenced variables are date-typed (if types are known)
+        variable_types = request.session.get('variable_types', {})
+        if variable_types and start_var and start_var in variable_types:
+            if variable_types[start_var] != 'date':
+                return render(request, 'core/partials/upload_error.html',
+                              {'error': f'"{start_var}" is not a date variable.'}, status=400)
+        if variable_types and end_var and end_var in variable_types:
+            if variable_types[end_var] != 'date':
+                return render(request, 'core/partials/upload_error.html',
+                              {'error': f'"{end_var}" is not a date variable.'}, status=400)
 
         # Pre-parse literal dates (same for every row)
         start_literal_date = _parse_date(start_lit) if start_lit else None

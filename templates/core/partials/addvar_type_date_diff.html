@@ -23,9 +23,10 @@
   <div class="space-y-2">
     <label class="block text-sm font-medium text-[#003B6F]">Start Date</label>
     <div>
-      <label class="block text-xs text-[#318CE7] mb-1">Variable</label>
+      <label class="block text-xs text-[#318CE7] mb-1">Variable (select or type)</label>
       <select
-        name="start_date_variable"
+        id="start_date_variable_select"
+        onchange="document.getElementById('start_date_variable_text').value = this.value"
         class="block w-full rounded-md border border-[#AECDE8] bg-white px-3 py-2
                text-sm shadow-sm focus:border-[#318CE7] focus:ring-1 focus:ring-[#318CE7]"
       >
@@ -34,6 +35,16 @@
         <option value="{{ col }}">{{ col }}</option>
         {% endfor %}
       </select>
+    </div>
+    <div>
+      <input
+        id="start_date_variable_text"
+        name="start_date_variable"
+        type="text"
+        placeholder="Variable name"
+        class="block w-full rounded-md border border-[#AECDE8] bg-white px-3 py-2
+               text-sm shadow-sm focus:border-[#318CE7] focus:ring-1 focus:ring-[#318CE7]"
+      >
     </div>
     <div>
       <label class="block text-xs text-[#318CE7] mb-1">Or Literal Value (MM/DD/YYYY)</label>
@@ -51,9 +62,10 @@
   <div class="space-y-2">
     <label class="block text-sm font-medium text-[#003B6F]">End Date</label>
     <div>
-      <label class="block text-xs text-[#318CE7] mb-1">Variable</label>
+      <label class="block text-xs text-[#318CE7] mb-1">Variable (select or type)</label>
       <select
-        name="end_date_variable"
+        id="end_date_variable_select"
+        onchange="document.getElementById('end_date_variable_text').value = this.value"
         class="block w-full rounded-md border border-[#AECDE8] bg-white px-3 py-2
                text-sm shadow-sm focus:border-[#318CE7] focus:ring-1 focus:ring-[#318CE7]"
       >
@@ -62,6 +74,16 @@
         <option value="{{ col }}">{{ col }}</option>
         {% endfor %}
       </select>
+    </div>
+    <div>
+      <input
+        id="end_date_variable_text"
+        name="end_date_variable"
+        type="text"
+        placeholder="Variable name"
+        class="block w-full rounded-md border border-[#AECDE8] bg-white px-3 py-2
+               text-sm shadow-sm focus:border-[#318CE7] focus:ring-1 focus:ring-[#318CE7]"
+      >
     </div>
     <div>
       <label class="block text-xs text-[#318CE7] mb-1">Or Literal Value (MM/DD/YYYY)</label>
