@@ -1,3 +1,5 @@
+import csv
+import io
 import json
 import math
 import re
@@ -173,6 +175,62 @@ def index(request):
     return render(request, 'core/index.html')
 
 
+# ---------------------------------------------------------------------------
+# CSV helpers
+# ---------------------------------------------------------------------------
+
+def _coerce_csv_value(s):
+    """Convert a CSV string cell to the most appropriate Python type."""
+    if s == '':
+        return None
+    if s == 'True':
+        return True
+    if s == 'False':
+        return False
+    try:
+        return int(s)
+    except ValueError:
+        pass
+    try:
+        return float(s)
+    except ValueError:
+        pass
+    return s
+
+
+def _parse_csv(raw_bytes):
+    """Parse CSV bytes into a list of dicts with typed values.
+
+    Empty cells in string-typed columns are preserved as '' to match
+    what JSON null-vs-empty-string semantics produce for those fields.
+    Empty cells in numeric/boolean columns become None.
+    """
+    text = raw_bytes.decode('utf-8-sig')
+    reader = csv.DictReader(io.StringIO(text))
+    rows = list(reader)
+    if not rows:
+        return []
+
+    # First pass: identify columns that contain at least one numeric/bool value.
+    # Only these columns coerce empty cells to None; all others keep empty as ''.
+    numeric_columns = set()
+    for row in rows:
+        for k, v in row.items():
+            if v and not isinstance(_coerce_csv_value(v), str):
+                numeric_columns.add(k)
+
+    result = []
+    for row in rows:
+        coerced_row = {}
+        for k, v in row.items():
+            if v == '':
+                coerced_row[k] = None if k in numeric_columns else ''
+            else:
+                coerced_row[k] = _coerce_csv_value(v)
+        result.append(coerced_row)
+    return result
+
+
 def upload_json(request):
     if request.method != 'POST':
         return HttpResponseNotAllowed(['POST'])
@@ -195,33 +253,50 @@ def upload_json(request):
             status=400,
         )
 
-    try:
-        text = raw.decode('utf-8')
-        # Repair lone backslashes that aren't valid JSON escape sequences.
-        # Valid JSON escapes: \", \\, \/, \b, \f, \n, \r, \t, \uXXXX
-        text = re.sub(r'\\(?!["\\/bfnrtu])', r'\\\\', text)
-        data = json.loads(text)
-    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+    filename = uploaded_file.name
+    if filename.lower().endswith('.csv'):
+        try:
+            data = _parse_csv(raw)
+        except Exception as exc:
+            return render(
+                request,
+                'core/partials/upload_error.html',
+                {'error': f'Invalid CSV: {exc}'},
+                status=400,
+            )
+    elif filename.lower().endswith('.json'):
+        try:
+            text = raw.decode('utf-8')
+            # Repair lone backslashes that aren't valid JSON escape sequences.
+            # Valid JSON escapes: \", \\, \/, \b, \f, \n, \r, \t, \uXXXX
+            text = re.sub(r'\\(?!["\\/bfnrtu])', r'\\\\', text)
+            data = json.loads(text)
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            return render(
+                request,
+                'core/partials/upload_error.html',
+                {'error': f'Invalid JSON: {exc}'},
+                status=400,
+            )
+        if not isinstance(data, list):
+            return render(
+                request,
+                'core/partials/upload_error.html',
+                {'error': 'JSON must be a list (array) of objects.'},
+                status=400,
+            )
+        if not all(isinstance(item, dict) for item in data):
+            return render(
+                request,
+                'core/partials/upload_error.html',
+                {'error': 'Every item in the JSON array must be an object (not a nested array or value).'},
+                status=400,
+            )
+    else:
         return render(
             request,
             'core/partials/upload_error.html',
-            {'error': f'Invalid JSON: {exc}'},
-            status=400,
-        )
-
-    if not isinstance(data, list):
-        return render(
-            request,
-            'core/partials/upload_error.html',
-            {'error': 'JSON must be a list (array) of objects.'},
-            status=400,
-        )
-
-    if not all(isinstance(item, dict) for item in data):
-        return render(
-            request,
-            'core/partials/upload_error.html',
-            {'error': 'Every item in the JSON array must be an object (not a nested array or value).'},
+            {'error': 'Unsupported file type. Please upload a .json or .csv file.'},
             status=400,
         )
 

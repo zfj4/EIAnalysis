@@ -156,3 +156,9 @@ TypeError: float() argument must be a string or a real number, not 'NoneType'
 * Verify that all 413 existing tests continue to pass (tests already use SQLite via test_settings.py, so no changes to test_settings.py are required).
 * Update the Tech Stack line at the top of this file to replace "PostgreSQL" with "SQLite".
 * Update README.md, dependencies.txt, and any other documentation to reflect the switch from PostgreSQL to SQLite.
+
+0.4.1 Requirements:
+* Follow Test Driven Development (TDD) practices, writing tests for each feature before implementing the feature itself, and ensuring that all tests pass before moving on to the next feature.
+* The application shall load data from local CSV files as well as JSON files.
+* This may be accomplished either by modifying the existing JSON import functionality or by adding a new button or buttons to choose and load a CSV file.
+* sample_data/Salmonellosis.csv has been added for developing, testing, and demonstration purposes: once loaded, Salmonellosis.csv and Salmonellosis.json should result in identical data objects.

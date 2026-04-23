@@ -12,11 +12,11 @@
     {% csrf_token %}
 
     <label class="block">
-      <span class="text-sm font-medium text-[#003B6F]">Select a JSON file</span>
+      <span class="text-sm font-medium text-[#003B6F]">Select a JSON or CSV file</span>
       <input
         type="file"
         name="json_file"
-        accept=".json,application/json"
+        accept=".json,.csv,application/json,text/csv"
         required
         class="mt-1 block w-full text-sm text-[#003B6F]
                file:mr-4 file:py-2 file:px-4

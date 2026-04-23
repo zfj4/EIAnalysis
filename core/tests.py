@@ -184,6 +184,109 @@ class UploadJsonViewTests(TestCase):
 
 
 # ===========================================================================
+# UploadCsvViewTests
+# ===========================================================================
+
+SALMONELLOSIS_CSV_PATH = Path(__file__).resolve().parent.parent / 'sample_data' / 'Salmonellosis.csv'
+
+
+class UploadCsvViewTests(TestCase):
+    """TDD tests for CSV file upload via the upload_json endpoint."""
+
+    URL = 'core:upload_json'
+
+    def _upload_csv(self, content, filename='data.csv'):
+        if isinstance(content, str):
+            content = content.encode('utf-8')
+        f = SimpleUploadedFile(filename, content, content_type='text/csv')
+        return self.client.post(reverse(self.URL), {'json_file': f}, format='multipart')
+
+    def test_csv_upload_returns_200(self):
+        response = self._upload_csv('name,age\nAlice,30\nBob,25')
+        self.assertEqual(response.status_code, 200)
+
+    def test_csv_upload_uses_summary_template(self):
+        response = self._upload_csv('name,age\nAlice,30')
+        self.assertTemplateUsed(response, 'core/partials/data_summary.html')
+
+    def test_csv_upload_stores_data_in_session(self):
+        self._upload_csv('name,age\nAlice,30\nBob,25')
+        data = self.client.session['data']
+        self.assertEqual(len(data), 2)
+        self.assertEqual(data[0]['name'], 'Alice')
+        self.assertEqual(data[1]['name'], 'Bob')
+
+    def test_csv_upload_stores_filename(self):
+        self._upload_csv('x,y\n1,2', filename='mydata.csv')
+        self.assertEqual(self.client.session['data_filename'], 'mydata.csv')
+
+    def test_csv_empty_value_becomes_none(self):
+        # age column has a numeric value in row 2, so it is detected as numeric
+        # and the empty cell in row 1 becomes None.
+        self._upload_csv('name,age\nAlice,\nBob,30')
+        data = self.client.session['data']
+        self.assertIsNone(data[0]['age'])
+
+    def test_csv_true_becomes_bool_true(self):
+        self._upload_csv('flag\nTrue')
+        self.assertIs(self.client.session['data'][0]['flag'], True)
+
+    def test_csv_false_becomes_bool_false(self):
+        self._upload_csv('flag\nFalse')
+        self.assertIs(self.client.session['data'][0]['flag'], False)
+
+    def test_csv_integer_string_becomes_int(self):
+        self._upload_csv('count\n42')
+        self.assertEqual(self.client.session['data'][0]['count'], 42)
+        self.assertIsInstance(self.client.session['data'][0]['count'], int)
+
+    def test_csv_float_string_becomes_float(self):
+        self._upload_csv('val\n3.14')
+        self.assertAlmostEqual(self.client.session['data'][0]['val'], 3.14)
+        self.assertIsInstance(self.client.session['data'][0]['val'], float)
+
+    def test_csv_empty_file_returns_400(self):
+        response = self._upload_csv(b'')
+        self.assertEqual(response.status_code, 400)
+
+    def test_csv_headers_only_returns_200(self):
+        response = self._upload_csv('name,age\n')
+        self.assertEqual(response.status_code, 200)
+
+    def test_csv_unsupported_extension_returns_400(self):
+        f = SimpleUploadedFile('data.txt', b'a,b\n1,2', content_type='text/plain')
+        response = self.client.post(reverse(self.URL), {'json_file': f}, format='multipart')
+        self.assertEqual(response.status_code, 400)
+
+    def test_salmonellosis_csv_matches_json(self):
+        """Loading Salmonellosis.csv must produce the same data object as Salmonellosis.json."""
+        json_path = Path(__file__).resolve().parent.parent / 'sample_data' / 'Salmonellosis.json'
+        with open(json_path, 'rb') as f:
+            raw = f.read()
+        expected = json.loads(raw)
+
+        with open(SALMONELLOSIS_CSV_PATH, 'rb') as f:
+            csv_bytes = f.read()
+        self._upload_csv(csv_bytes, filename='Salmonellosis.csv')
+        actual = self.client.session['data']
+
+        self.assertEqual(len(actual), len(expected))
+        for i, (got, exp) in enumerate(zip(actual, expected)):
+            for k in exp:
+                csv_val = got.get(k)
+                json_val = exp.get(k)
+                # None and '' are both valid representations of a missing value.
+                # Entirely-empty CSV columns cannot be distinguished as string vs
+                # numeric without a schema, so we treat both as equivalent here.
+                csv_missing = csv_val is None or csv_val == ''
+                json_missing = json_val is None or json_val == ''
+                if json_missing:
+                    self.assertTrue(csv_missing, msg=f'Row {i}, col {k!r}: expected missing, got {csv_val!r}')
+                else:
+                    self.assertEqual(csv_val, json_val, msg=f'Row {i}, col {k!r} mismatch')
+
+
+# ===========================================================================
 # TablesFormViewTests
 # ===========================================================================
 
