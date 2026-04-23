@@ -1,6 +1,6 @@
 EIAnalysis Single-Page Application
 
-Tech Stack: HTMX, Django, PostgreSQL
+Tech Stack: HTMX, Django, SQLite
 
 Requirements:
 
@@ -145,3 +145,14 @@ TypeError: float() argument must be a string or a real number, not 'NoneType'
 * Use only variables that are dates or can be parsed or trimmed as dates in the drop-downs in the "Difference between Two Dates" functionality of the Add/Update Variable Tool, and provide an error message if the user attempts to use a non-date variable in that functionality.
 * When a variable is selected from one of these drop-downs, write that variable in the corresponding text input field.
 * On execution of "Difference between Two Dates", use the text input field values rather than the drop-down values to determine which variables to use, so that the user can type in variable names rather than selecting from the drop-downs if they prefer. Typed text overrides drop-down selections, but if the text input field is left blank, then the drop-down selection is used.
+
+0.4.0 Requirements:
+* Follow Test Driven Development (TDD) practices, writing tests for each feature before implementing the feature itself, and ensuring that all tests pass before moving on to the next feature.
+* Switch the application database from PostgreSQL to SQLite for simplified deployment.
+* Remove PostgreSQL-specific configuration from settings.py and replace it with Django's default SQLite configuration.
+* Update eianalysis/settings.py to use SQLite (ENGINE: django.db.backends.sqlite3, NAME: BASE_DIR / 'db.sqlite3').
+* Remove psycopg2-binary from project dependencies (it is no longer needed).
+* Run migrations against the new SQLite database to ensure the schema is created correctly.
+* Verify that all 413 existing tests continue to pass (tests already use SQLite via test_settings.py, so no changes to test_settings.py are required).
+* Update the Tech Stack line at the top of this file to replace "PostgreSQL" with "SQLite".
+* Update README.md, dependencies.txt, and any other documentation to reflect the switch from PostgreSQL to SQLite.

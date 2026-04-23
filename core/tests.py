@@ -4288,3 +4288,26 @@ class RunAddVarTextOverrideDateDiffTests(TestCase):
             'variable_name': 'test',
         })
         self.assertEqual(response.status_code, 400)
+
+
+# ---------------------------------------------------------------------------
+# 0.4.0 — SQLite database configuration
+# ---------------------------------------------------------------------------
+
+class SQLiteConfigurationTest(TestCase):
+    def test_main_settings_uses_sqlite_engine(self):
+        import eianalysis.settings as main_settings
+        self.assertEqual(
+            main_settings.DATABASES['default']['ENGINE'],
+            'django.db.backends.sqlite3',
+        )
+
+    def test_main_settings_sqlite_name_is_db_sqlite3(self):
+        import eianalysis.settings as main_settings
+        db_name = str(main_settings.DATABASES['default']['NAME'])
+        self.assertIn('db.sqlite3', db_name)
+
+    def test_psycopg2_not_in_dependencies(self):
+        deps_path = Path(__file__).resolve().parent.parent / 'dependencies.txt'
+        contents = deps_path.read_text()
+        self.assertNotIn('psycopg2', contents)

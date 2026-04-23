@@ -1,5 +1,5 @@
 # EIAnalysis
-v0.3.1<br>
+v0.4.0<br>
 
 A single-page epidemiological analysis application built with Django, HTMX, and Tailwind CSS.
 Load a JSON data file and run statistical analyses. Powered by the [epiinfo](https://github.com/Epi-Info/epiinfo) library.
@@ -17,9 +17,8 @@ Before you begin, install the following on your machine:
 | Software | Version | Download |
 |---|---|---|
 | Python | 3.11 or later | https://www.python.org/downloads/ |
-| Docker Desktop | latest | https://www.docker.com/products/docker-desktop/ |
 
-Docker is used to run the PostgreSQL database. Python runs the Django development server directly on your machine, so code changes take effect immediately without rebuilding anything.
+No database server or Docker installation is required. EIAnalysis uses SQLite, which is included with Python.
 
 ---
 
@@ -76,37 +75,21 @@ You should see `(.venv)` at the start of your prompt.
 pip install -r dependencies.txt
 ```
 
-This installs Django, psycopg2-binary (PostgreSQL driver), and the epiinfo analysis library along with its dependencies (scipy, etc.).
+This installs Django, the epiinfo analysis library, and its dependencies (scipy, etc.).
 
 ---
 
-## 5 — Start the database
-
-Make sure Docker Desktop is running, then from the project folder:
-
-```
-docker compose up -d
-```
-
-Docker will start a PostgreSQL 17 container on port 5432. Your database data is preserved in a Docker volume between runs.
-
-> **Note:** On first run, Docker must download the PostgreSQL image (~60 MB). Subsequent starts are fast.
-
-To stop the database: `docker compose down`
-
----
-
-## 6 — Run database migrations
+## 5 — Run database migrations
 
 ```
 python manage.py migrate
 ```
 
-You should see a series of `OK` lines as Django creates its tables.
+This creates the SQLite database file (`db.sqlite3`) and sets up Django's session and admin tables.
 
 ---
 
-## 7 — Start the development server
+## 6 — Start the development server
 
 ```
 python manage.py runserver9000
@@ -122,11 +105,11 @@ http://127.0.0.1:9000/
 
 You should see the EIAnalysis home screen with a **Load Data File** button.
 
-Code changes take effect immediately — no Docker rebuild needed.
+Code changes take effect immediately.
 
 ---
 
-## 8 — Try it out
+## 7 — Try it out
 
 See the **[wiki](https://github.com/zfj4/EIAnalysis/wiki)** for step-by-step walkthroughs showing how to load each sample dataset and run each analysis, with expected output values.
 
@@ -139,7 +122,7 @@ See the **[wiki](https://github.com/zfj4/EIAnalysis/wiki)** for step-by-step wal
 python manage.py test core --settings=eianalysis.test_settings
 ```
 
-Tests use an in-memory SQLite database — no live PostgreSQL connection required.
+Tests use an in-memory SQLite database.
 
 ---
 
@@ -154,8 +137,8 @@ EIAnalysis/
 │   ├── urls.py
 │   └── views.py
 ├── eianalysis/                  # Django project settings
-│   ├── settings.py              # Configure DB credentials here
-│   └── test_settings.py        # Overrides DB to SQLite for tests
+│   ├── settings.py              # SQLite database configuration
+│   └── test_settings.py        # Overrides DB to in-memory SQLite for tests
 ├── sample_data/
 │   └── Salmonellosis.json       # Sample dataset (309 records)
 ├── templates/core/
