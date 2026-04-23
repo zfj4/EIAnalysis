@@ -129,6 +129,10 @@ class IndexViewTests(TestCase):
         response = self.client.get(reverse('core:index'))
         self.assertContains(response, 'https://github.com/Epi-Info/Epi-Info-Community-Edition')
 
+    def test_header_beta_version_line(self):
+        response = self.client.get(reverse('core:index'))
+        self.assertContains(response, 'Beta version 0.4.1.3 -- for evaluation purposes only')
+
 
 # ===========================================================================
 # UploadJsonViewTests
