@@ -101,6 +101,34 @@ class IndexViewTests(TestCase):
         self.assertContains(response, f'hx-get="{index_url}"')
         self.assertContains(response, 'EIAnalysis')
 
+    def test_welcome_message_present(self):
+        response = self.client.get(reverse('core:index'))
+        self.assertContains(response, 'Welcome.')
+
+    def test_welcome_message_epiinfo7_reference(self):
+        response = self.client.get(reverse('core:index'))
+        self.assertContains(response, 'Epi Info 7')
+
+    def test_welcome_message_epiinfo_python_link(self):
+        response = self.client.get(reverse('core:index'))
+        self.assertContains(response, 'https://github.com/Epi-Info/epiinfo')
+
+    def test_welcome_message_repo_link(self):
+        response = self.client.get(reverse('core:index'))
+        self.assertContains(response, 'https://github.com/zfj4/EIAnalysis')
+
+    def test_welcome_message_wiki_link(self):
+        response = self.client.get(reverse('core:index'))
+        self.assertContains(response, 'https://github.com/zfj4/EIAnalysis/wiki')
+
+    def test_welcome_message_beta_notice(self):
+        response = self.client.get(reverse('core:index'))
+        self.assertContains(response, 'beta product')
+
+    def test_welcome_message_community_edition_link(self):
+        response = self.client.get(reverse('core:index'))
+        self.assertContains(response, 'https://github.com/Epi-Info/Epi-Info-Community-Edition')
+
 
 # ===========================================================================
 # UploadJsonViewTests

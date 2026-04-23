@@ -146,16 +146,6 @@ TypeError: float() argument must be a string or a real number, not 'NoneType'
 * When a variable is selected from one of these drop-downs, write that variable in the corresponding text input field.
 * On execution of "Difference between Two Dates", use the text input field values rather than the drop-down values to determine which variables to use, so that the user can type in variable names rather than selecting from the drop-downs if they prefer. Typed text overrides drop-down selections, but if the text input field is left blank, then the drop-down selection is used.
 
-0.4.1.1 Requirements:
-* Follow Test Driven Development (TDD) practices, writing tests for each feature before implementing the feature itself, and ensuring that all tests pass before moving on to the next feature.
-* The application shall be deployable to PythonAnywhere's free tier without modifying the localhost development workflow.
-* Add whitenoise to project dependencies for static file serving in production (required because DEBUG=False disables Django's built-in static file serving).
-* Configure settings.py to read SECRET_KEY, DJANGO_DEBUG, and ALLOWED_HOSTS from environment variables, with defaults appropriate for local development (SECRET_KEY falls back to the existing insecure dev key; DJANGO_DEBUG defaults to True; ALLOWED_HOSTS defaults to 127.0.0.1,localhost).
-* Add whitenoise.middleware.WhiteNoiseMiddleware to MIDDLEWARE immediately after SecurityMiddleware.
-* Configure STATIC_ROOT = BASE_DIR / 'staticfiles' so that collectstatic has a target directory.
-* Update README.md with step-by-step PythonAnywhere free-tier deployment instructions covering: cloning the repo, creating a virtual environment, installing dependencies, configuring the WSGI file, setting environment variables, running collectstatic and migrate, and reloading the web app.
-* Update the version number in README.md to 0.4.1.1.
-
 0.4.0 Requirements:
 * Follow Test Driven Development (TDD) practices, writing tests for each feature before implementing the feature itself, and ensuring that all tests pass before moving on to the next feature.
 * Switch the application database from PostgreSQL to SQLite for simplified deployment.
@@ -172,3 +162,19 @@ TypeError: float() argument must be a string or a real number, not 'NoneType'
 * The application shall load data from local CSV files as well as JSON files.
 * This may be accomplished either by modifying the existing JSON import functionality or by adding a new button or buttons to choose and load a CSV file.
 * sample_data/Salmonellosis.csv has been added for developing, testing, and demonstration purposes: once loaded, Salmonellosis.csv and Salmonellosis.json should result in identical data objects.
+
+0.4.1.1 Requirements:
+* Follow Test Driven Development (TDD) practices, writing tests for each feature before implementing the feature itself, and ensuring that all tests pass before moving on to the next feature.
+* The application shall be deployable to PythonAnywhere's free tier without modifying the localhost development workflow.
+* Add whitenoise to project dependencies for static file serving in production (required because DEBUG=False disables Django's built-in static file serving).
+* Configure settings.py to read SECRET_KEY, DJANGO_DEBUG, and ALLOWED_HOSTS from environment variables, with defaults appropriate for local development (SECRET_KEY falls back to the existing insecure dev key; DJANGO_DEBUG defaults to True; ALLOWED_HOSTS defaults to 127.0.0.1,localhost).
+* Add whitenoise.middleware.WhiteNoiseMiddleware to MIDDLEWARE immediately after SecurityMiddleware.
+* Configure STATIC_ROOT = BASE_DIR / 'staticfiles' so that collectstatic has a target directory.
+* Update README.md with step-by-step PythonAnywhere free-tier deployment instructions covering: cloning the repo, creating a virtual environment, installing dependencies, configuring the WSGI file, setting environment variables, running collectstatic and migrate, and reloading the web app.
+* Update the version number in README.md to 0.4.1.1.
+
+0.4.1.2 Requirements:
+* Follow Test Driven Development (TDD) practices, writing tests for each feature before implementing the feature itself, and ensuring that all tests pass before moving on to the next feature.
+* Add a welcome message to the main-content div in index.html, to the right of the file selection column.
+* The message shall say: "Welcome. This web application reproduces much of the functionality of Epi Info 7's (for Windows) Dashboard Analysis tool. Its files and documentation may be viewed <a href='https://github.com/zfj4/EIAnalysis'>here</a>. Its statistical analyses are executed by the <a href='https://github.com/Epi-Info/epiinfo'>Epi Info Python Project</a>.<br><br>See <a href='https://github.com/zfj4/EIAnalysis/wiki'>here</a> for a tutorial and other examples.<br><br>This is a beta product that is still under evaluation. Please compare any analysis results to those of other statistical analysis tools, such as Epi Info 7.<br><br>Epi Info 7 may still be downloaded and extracted from its <a href='https://github.com/Epi-Info/Epi-Info-Community-Edition'>code repository</a>."
+* Update the version number in README.md to 0.4.1.2.
