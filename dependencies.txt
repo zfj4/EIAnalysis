@@ -1,2 +1,3 @@
 Django==6.0.1
+whitenoise==6.9.0
 epiinfo==1.2.0.18

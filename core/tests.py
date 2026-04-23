@@ -4414,3 +4414,70 @@ class SQLiteConfigurationTest(TestCase):
         deps_path = Path(__file__).resolve().parent.parent / 'dependencies.txt'
         contents = deps_path.read_text()
         self.assertNotIn('psycopg2', contents)
+
+
+# ---------------------------------------------------------------------------
+# 0.4.1.1 — PythonAnywhere deployment configuration
+# ---------------------------------------------------------------------------
+
+import importlib
+import os as _os
+
+
+class ProductionSettingsTest(TestCase):
+    """Verify settings.py is configured for PythonAnywhere deployment."""
+
+    def _reload(self):
+        import eianalysis.settings as s
+        importlib.reload(s)
+        return s
+
+    def tearDown(self):
+        # Always restore settings to their original state after each test.
+        self._reload()
+
+    def test_whitenoise_middleware_present(self):
+        import eianalysis.settings as s
+        self.assertIn('whitenoise.middleware.WhiteNoiseMiddleware', s.MIDDLEWARE)
+
+    def test_whitenoise_after_security_middleware(self):
+        import eianalysis.settings as s
+        idx_security = s.MIDDLEWARE.index('django.middleware.security.SecurityMiddleware')
+        idx_whitenoise = s.MIDDLEWARE.index('whitenoise.middleware.WhiteNoiseMiddleware')
+        self.assertEqual(idx_whitenoise, idx_security + 1)
+
+    def test_static_root_configured(self):
+        import eianalysis.settings as s
+        self.assertTrue(s.STATIC_ROOT)
+        self.assertIn('staticfiles', str(s.STATIC_ROOT))
+
+    def test_secret_key_reads_env_var(self):
+        with patch.dict(_os.environ, {'SECRET_KEY': 'env-test-secret'}):
+            s = self._reload()
+            self.assertEqual(s.SECRET_KEY, 'env-test-secret')
+
+    def test_debug_false_when_env_var_set(self):
+        with patch.dict(_os.environ, {'DJANGO_DEBUG': 'False'}):
+            s = self._reload()
+            self.assertFalse(s.DEBUG)
+
+    def test_debug_true_by_default(self):
+        env = {k: v for k, v in _os.environ.items() if k != 'DJANGO_DEBUG'}
+        with patch.dict(_os.environ, env, clear=True):
+            s = self._reload()
+            self.assertTrue(s.DEBUG)
+
+    def test_allowed_hosts_reads_env_var(self):
+        with patch.dict(_os.environ, {'ALLOWED_HOSTS': 'myuser.pythonanywhere.com'}):
+            s = self._reload()
+            self.assertIn('myuser.pythonanywhere.com', s.ALLOWED_HOSTS)
+
+    def test_allowed_hosts_default_includes_localhost(self):
+        env = {k: v for k, v in _os.environ.items() if k != 'ALLOWED_HOSTS'}
+        with patch.dict(_os.environ, env, clear=True):
+            s = self._reload()
+            self.assertIn('127.0.0.1', s.ALLOWED_HOSTS)
+
+    def test_whitenoise_in_dependencies(self):
+        deps_path = Path(__file__).resolve().parent.parent / 'dependencies.txt'
+        self.assertIn('whitenoise', deps_path.read_text())

@@ -146,6 +146,16 @@ TypeError: float() argument must be a string or a real number, not 'NoneType'
 * When a variable is selected from one of these drop-downs, write that variable in the corresponding text input field.
 * On execution of "Difference between Two Dates", use the text input field values rather than the drop-down values to determine which variables to use, so that the user can type in variable names rather than selecting from the drop-downs if they prefer. Typed text overrides drop-down selections, but if the text input field is left blank, then the drop-down selection is used.
 
+0.4.1.1 Requirements:
+* Follow Test Driven Development (TDD) practices, writing tests for each feature before implementing the feature itself, and ensuring that all tests pass before moving on to the next feature.
+* The application shall be deployable to PythonAnywhere's free tier without modifying the localhost development workflow.
+* Add whitenoise to project dependencies for static file serving in production (required because DEBUG=False disables Django's built-in static file serving).
+* Configure settings.py to read SECRET_KEY, DJANGO_DEBUG, and ALLOWED_HOSTS from environment variables, with defaults appropriate for local development (SECRET_KEY falls back to the existing insecure dev key; DJANGO_DEBUG defaults to True; ALLOWED_HOSTS defaults to 127.0.0.1,localhost).
+* Add whitenoise.middleware.WhiteNoiseMiddleware to MIDDLEWARE immediately after SecurityMiddleware.
+* Configure STATIC_ROOT = BASE_DIR / 'staticfiles' so that collectstatic has a target directory.
+* Update README.md with step-by-step PythonAnywhere free-tier deployment instructions covering: cloning the repo, creating a virtual environment, installing dependencies, configuring the WSGI file, setting environment variables, running collectstatic and migrate, and reloading the web app.
+* Update the version number in README.md to 0.4.1.1.
+
 0.4.0 Requirements:
 * Follow Test Driven Development (TDD) practices, writing tests for each feature before implementing the feature itself, and ensuring that all tests pass before moving on to the next feature.
 * Switch the application database from PostgreSQL to SQLite for simplified deployment.
